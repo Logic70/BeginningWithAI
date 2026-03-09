@@ -1594,6 +1594,136 @@ llm = ChatOpenAI(model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
 
 > **理解要点**：MCP Server 是"工具提供者"，不是"模型使用者"。你可以开发一个 MCP Server，然后在不同的模型后端间自由切换。
 
+### 场景 C：MCP Client 编程实例
+
+> 前面实验只开发了 MCP Server（暴露工具），但实际使用中还需要 **MCP Client** 来连接 Server、发现工具、调用工具。文档中的架构图 `AI 模型 ←→ MCP Client ←→ MCP Server` 中，Client 端才是真正驱动整个流程的核心。
+
+#### MCP Client 的角色
+
+```
+MCP Server（你已经开发好了）     MCP Client（本节要学的）
+├── 暴露 Tools                   ├── 连接 Server
+├── 暴露 Resources               ├── 发现可用工具
+└── 等待被调用                   ├── 调用工具并获取结果
+                                 └── 将工具结果交给 LLM 处理
+```
+
+在之前的实验中，Client 端是由 Claude Desktop 充当的。但在编程场景下，你需要自己用代码创建 MCP Client。
+
+#### 方式一：原生 MCP SDK 客户端
+
+```python
+"""
+MCP Client - 使用原生 mcp SDK 连接 MCP Server
+"""
+import asyncio
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+async def main():
+    # 定义要连接的 MCP Server
+    server_params = StdioServerParameters(
+        command="python",
+        args=["exp3_4_mcp_server.py"],
+    )
+
+    # 通过 stdio 传输建立连接
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            # 1. 初始化握手
+            await session.initialize()
+
+            # 2. 发现可用工具
+            tools = await session.list_tools()
+            print("可用工具：")
+            for tool in tools.tools:
+                print(f"  - {tool.name}: {tool.description}")
+
+            # 3. 调用工具
+            result = await session.call_tool(
+                "port_scan",
+                arguments={"host": "localhost", "ports": [80, 443]}
+            )
+            print(f"\n工具返回: {result.content}")
+
+asyncio.run(main())
+```
+
+> **理解要点**：`ClientSession` 实现了 MCP 协议的握手（`initialize`）→ 发现（`list_tools`）→ 调用（`call_tool`）完整生命周期。这和 Function Calling 的 5 步流程类似，只是通信走的是 MCP 协议而非直接函数调用。
+
+#### 方式二：LangChain MCP 适配器（推荐）
+
+LangChain 官方提供了 `langchain-mcp-adapters` 库，它是 MCP 与 LangChain 之间的桥梁：
+
+```bash
+pip install langchain-mcp-adapters
+```
+
+核心组件：
+
+| 组件 | 作用 |
+|------|------|
+| `MultiServerMCPClient` | 连接一个或多个 MCP Server，管理连接生命周期 |
+| `client.get_tools()` | 从 Server 自动发现工具，转为 LangChain Tool 格式 |
+| 支持 `stdio` 和 `sse` 两种传输 | 本地进程用 stdio，远程服务用 HTTP/SSE |
+
+```python
+"""
+MCP Client - 使用 LangChain MCP 适配器
+自动将 MCP Server 的工具转为 LangChain Tool，无需手写 @tool 或 JSON Schema
+"""
+import os
+import asyncio
+from dotenv import load_dotenv
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
+
+load_dotenv()
+
+async def main():
+    # 1. 连接 MCP Server（支持同时连多个 Server）
+    async with MultiServerMCPClient(
+        {
+            "security-tools": {
+                "command": "python",
+                "args": ["exp3_4_mcp_server.py"],
+                "transport": "stdio",
+            }
+        }
+    ) as client:
+        # 2. 自动发现并加载所有 MCP 工具 → 转为 LangChain Tool
+        tools = client.get_tools()
+        print(f"已加载 {len(tools)} 个工具: {[t.name for t in tools]}")
+
+        # 3. 用 LangChain Agent 直接使用这些工具
+        llm = ChatOpenAI(
+            model=os.getenv("OPENAI_MODEL", "qwen3.5-plus"),
+            api_key=os.getenv("OPENAI_API_KEY"),
+            base_url=os.getenv("OPENAI_BASE_URL"),
+        )
+        agent = create_react_agent(llm, tools)
+
+        result = await agent.ainvoke({
+            "messages": [("user", "扫描 localhost 的 80 和 443 端口")]
+        })
+        print(result["messages"][-1].content)
+
+asyncio.run(main())
+```
+
+#### 三种 MCP Client 方式对比
+
+| | Claude Desktop | 原生 mcp SDK | langchain-mcp-adapters |
+|---|---|---|---|
+| **适用场景** | 交互式使用 | 底层编程控制 | 与 LangChain Agent 集成 |
+| **工具发现** | 自动 | `session.list_tools()` | `client.get_tools()` 自动转换 |
+| **工具调用** | 自动 | `session.call_tool()` | Agent 自动调度 |
+| **多 Server** | 支持 | 需手动管理 | `MultiServerMCPClient` 内置支持 |
+| **学习价值** | ⭐ 了解概念 | ⭐⭐⭐ 理解协议 | ⭐⭐ 掌握最佳实践 |
+
+> **核心价值**：`langchain-mcp-adapters` 让你写的 MCP Server 工具**不需要再手动定义 `@tool` 或 JSON Schema**，`get_tools()` 会自动从 Server 发现并转换。这意味着你开发的任何 MCP Server，LangChain Agent 都能直接使用。
+
 ---
 
 ## 🧪 实验 3.6-3.7：Skill 开发
