@@ -47,6 +47,48 @@ docker compose up -d
 
 ---
 
+## 📋 Agent 底层逻辑概览
+
+> 在进入具体实验之前，先理解 Agent 工具调用的底层原理。各技术（MCP、Skill 等）的详细说明见对应实验章节，全景对比见末尾「工具调用模式总结」。
+
+### Function Calling 的 5 步生命周期
+
+这是理解所有 Agent 框架的基石：
+
+```
+步骤 1: 初始化 Client/LLM
+         │
+步骤 2: 定义 Tools List（函数说明书）
+         │
+步骤 3: 第一次调用（问题 + Tools → 模型）
+         │  模型不直接回答，返回: "我要调 scan_port，参数是 {...}"
+         │
+步骤 4: 本地执行工具
+         │  运行 TOOL_MAP["scan_port"](**args)，拿到真实结果
+         │
+步骤 5: 第二次调用（原问题 + 调用指令 + 工具结果 → 模型）
+            模型看完结果，生成最终自然语言回答
+```
+
+> **本质**：模型只做决策不执行，代码只做执行不思考。二者通过消息传递协作。
+
+### 从 Function Calling 到 ReAct Agent
+
+以上 5 步是**单次工具调用**的闭环。真正的 Agent 只是加了 `while True`：
+
+```python
+while True:
+    response = llm.invoke(messages)    # 问模型
+    if response.tool_calls:            # 模型要调工具？
+        执行工具 → 将结果追加到 messages → continue
+    else:
+        break  # 模型直接回答了 → 退出循环
+```
+
+这就是 ReAct Agent 的中心引擎。无论手写还是 `create_react_agent()`，底层都是这个循环。
+
+---
+
 ## 🧪 实验 3.1：Function Calling 基础
 
 ### 目标
@@ -800,7 +842,7 @@ result = func.invoke({"host": "localhost", "port": 80})
 
 ---
 
-## 🧪 实验 3.Prompt：Prompt 核心价值与实战
+## 🧪 实验 3.2：Prompt 核心价值与 LCEL
 
 ### 目标
 理解 `ChatPromptTemplate` 的核心价值：变量替换和 LCEL 链式组装。
@@ -872,7 +914,7 @@ python3 experiments/phase3/exp3_prompt_template.py --demo 2 --backend openai
 
 ---
 
-## 🧪 实验 3.2：ReAct Agent 实现
+## 🧪 实验 3.3：ReAct Agent 实现
 
 ### 目标
 构建一个能够推理和行动交替进行的 Agent。
@@ -894,7 +936,7 @@ Final Answer: 扫描完成，发现以下安全问题...
 
 ```python
 """
-实验 3.2: ReAct Agent
+实验 3.3: ReAct Agent
 推理与行动交替进行
 支持 Ollama 本地模型和 OpenAI 兼容 API 两种后端
 """
@@ -1136,7 +1178,7 @@ python3 experiments/phase3/exp3_2_react_agent.py --backend openai
 
 ```python
 """
-实验 3.2c: LangChain ReAct Agent
+实验 3.3c: LangChain ReAct Agent
 对比手写 ReAct 循环，体验框架的封装价值
 """
 import os
@@ -1243,7 +1285,7 @@ if __name__ == "__main__":
 
 #### 手写 ReAct vs LangChain ReAct 对比
 
-| | 手写 ReAct（实验 3.2） | LangChain ReAct（实验 3.2c） |
+| | 手写 ReAct（实验 3.3） | LangChain ReAct（实验 3.3c） |
 |---|---|---|
 | **代码量** | ~100 行 | ~10 行核心代码 |
 | **提示词管理** | 手动构造 Thought/Action/Observation 模板 | 框架内置，自动管理 |
@@ -1253,68 +1295,11 @@ if __name__ == "__main__":
 | **学习价值** | ⭐⭐⭐ 深入理解 ReAct 原理 | ⭐ 了解最佳实践 |
 | **生产可用** | ⭐ 需要大量完善 | ⭐⭐⭐ 开箱即用 |
 
-> **建议**：先完成手写版（3.2），确保理解 ReAct 的每个步骤，再用 LangChain 版（3.2c）体会框架的封装价值。
+> **建议**：先完成手写版（3.3），确保理解 ReAct 的每个步骤，再用 LangChain 版（3.3c）体会框架的封装价值。
 
 ---
 
-### 📋 Agent 底层逻辑的体系化认知
-
-> 完成手写 ReAct 和 LangChain ReAct 对比后，从更高视角审视整个 Agent 生态。
-
-#### 三层概念对比：Function Calling vs MCP vs Skill
-
-| | Function Calling | MCP | Skill |
-|---|---|---|---|
-| **是什么** | API 协议特性 | 工具服务协议 | IDE 插件指令集 |
-| **谁定义** | OpenAI 等模型厂商 | Anthropic | Cursor/Gemini 等 IDE |
-| **运行位置** | 你的代码中 | 独立进程/服务 | IDE 的 Agent 中 |
-| **调用方式** | 模型返回 `tool_calls` → 你执行 → 回传结果 | 客户端通过 JSON-RPC 发现和调用 Server 暴露的工具 | Agent 根据 SKILL.md 指令自动执行 |
-
-```
-Skill（最高层 — 编排多步骤任务）
-  └── 可能内部使用 MCP 工具
-        └── MCP Server 内部可能用 Function Calling 与模型交互
-```
-
-#### Function Calling 的 5 步生命周期
-
-这是理解所有 Agent 框架的基石：
-
-```
-步骤 1: 初始化 Client/LLM
-         │
-步骤 2: 定义 Tools List（函数说明书）
-         │
-步骤 3: 第一次调用（问题 + Tools → 模型）
-         │  模型不直接回答，返回: "我要调 scan_port，参数是 {...}"
-         │
-步骤 4: 本地执行工具
-         │  运行 TOOL_MAP["scan_port"](**args)，拿到真实结果
-         │
-步骤 5: 第二次调用（原问题 + 调用指令 + 工具结果 → 模型）
-            模型看完结果，生成最终自然语言回答
-```
-
-> **本质**：模型只做决策不执行，代码只做执行不思考。二者通过消息传递协作。
-
-#### 从 Function Calling 到 ReAct Agent
-
-以上 5 步是**单次工具调用**的闭环。真正的 Agent 只是加了 `while True`：
-
-```python
-while True:
-    response = llm.invoke(messages)    # 问模型
-    if response.tool_calls:            # 模型要调工具？
-        执行工具 → 将结果追加到 messages → continue
-    else:
-        break  # 模型直接回答了 → 退出循环
-```
-
-这就是 ReAct Agent 的中心引擎。无论手写还是 `create_react_agent()`，底层都是这个循环。
-
----
-
-## 🧪 实验 3.3-3.5：MCP Server 开发
+## 🧪 实验 3.4-3.6：MCP Server 开发
 
 ### 目标
 开发符合 MCP 协议的安全工具服务。
@@ -1343,7 +1328,7 @@ MCP Server
 
 ```python
 """
-实验 3.4: MCP Server - 安全工具集成
+实验 3.5: MCP Server - 安全工具集成
 将 Nmap 等安全工具封装为 MCP 服务
 """
 import asyncio
@@ -1726,7 +1711,7 @@ asyncio.run(main())
 
 ---
 
-## 🧪 实验 3.6-3.7：Skill 开发
+## 🧪 实验 3.7-3.8：Skill 开发
 
 ### 目标
 为 AI 编码助手开发自定义 Skill。
@@ -1924,7 +1909,7 @@ if __name__ == "__main__":
 
 ---
 
-## 🧪 实验 3.8：Dify 平台部署与基础使用
+## 🧪 实验 3.9：Dify 平台部署与基础使用
 
 ### 目标
 部署 Dify 平台，理解工作流和 Agent 节点的基本用法。
@@ -1979,7 +1964,7 @@ docker compose ps
 
 ---
 
-## 🧪 实验 3.9：Dify 可视化编排安全分析工作流
+## 🧪 实验 3.10：Dify 可视化编排安全分析工作流
 
 ### 目标
 使用 Dify 的可视化工作流构建安全分析流水线。
@@ -2019,7 +2004,7 @@ docker compose ps
 
 ```python
 """
-实验 3.9: 调用 Dify 工作流 API
+实验 3.10: 调用 Dify 工作流 API
 """
 import requests
 import json
@@ -2066,7 +2051,7 @@ if __name__ == "__main__":
 
 ---
 
-## 🧪 实验 3.10：A2A 协议与 Agent Card
+## 🧪 实验 3.11：A2A 协议与 Agent Card
 
 ### 目标
 理解 A2A 协议原理，实现 Agent Card 能力发现机制。
@@ -2107,7 +2092,7 @@ Agent A (扫描) ←→ A2A 协议 (JSON-RPC 2.0) ←→ Agent B (分析)
 
 ```python
 """
-实验 3.10: A2A Agent Card 定义与发现
+实验 3.11: A2A Agent Card 定义与发现
 """
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
@@ -2235,7 +2220,7 @@ if __name__ == "__main__":
 
 ---
 
-## 🧪 实验 3.11：多 Agent 协作（A2A 实践）
+## 🧪 实验 3.12：多 Agent 协作（A2A 实践）
 
 ### 目标
 基于 A2A 协议实现扫描 Agent 和分析 Agent 的协作。
@@ -2256,7 +2241,7 @@ if __name__ == "__main__":
 
 ```python
 """
-实验 3.11: A2A 多 Agent 协作
+实验 3.12: A2A 多 Agent 协作
 扫描Agent + 分析Agent 协作完成安全评估
 """
 import json
@@ -2453,7 +2438,7 @@ if __name__ == "__main__":
 
 ---
 
-## 🧪 实验 3.12-3.13：综合项目
+## 🧪 实验 3.13-3.14：综合项目
 
 ### 目标
 构建完整的自动化安全测试 Agent。
@@ -2464,7 +2449,7 @@ if __name__ == "__main__":
 
 ```python
 """
-实验 3.12: 自动化渗透测试 Agent
+实验 3.13: 自动化渗透测试 Agent
 整合多个安全工具进行自动化测试
 """
 from langgraph.graph import StateGraph, END
@@ -2571,7 +2556,7 @@ if __name__ == "__main__":
 
 ```python
 """
-实验 3.12 扩展: LangGraph + API Key 综合安全工作流
+实验 3.13 扩展: LangGraph + API Key 综合安全工作流
 生产环境中的典型组合：云端模型 + LangGraph 状态机 + LangChain 工具
 """
 import os
@@ -2674,6 +2659,65 @@ if __name__ == "__main__":
 | **复杂工作流** | API Key + LangGraph | 状态管理清晰、流程可控 |
 | **工具集成** | 任意模型 + MCP Server | 工具与模型解耦、可复用 |
 | **生产部署** | API Key + LangGraph + MCP | 完整技术栈、可维护性好 |
+
+---
+
+---
+
+## 📋 工具调用模式总结
+
+> 完成以上所有实验后，回顾四种工具调用模式的全景对比。
+
+### 四种模式全景对比
+
+| | Function Calling | MCP | Shell Tool | Skill |
+|---|---|---|---|---|
+| **是什么** | API 协议特性 | 工具服务协议 | 通用 CLI 执行 | IDE 插件指令集 |
+| **模型的认知来源** | JSON Schema（显式） | Server 自动发现 | 训练数据 + Prompt | SKILL.md 指令 |
+| **新增工具成本** | 写代码封装 | 写 MCP Server | 零（CLI 已存在） | 写文档 |
+| **调用确定性** | ⭐⭐⭐ 强 | ⭐⭐⭐ 强 | ⭐⭐ 弱 | ⭐⭐ 中 |
+| **安全性** | ⭐⭐⭐ 受控 | ⭐⭐⭐ 受控 | ⭐ 高风险 | ⭐⭐ 中 |
+| **适用场景** | 生产环境 | 工具服务化 | 开发探索 | 冷门工具补充 |
+| **典型产品** | OpenAI API | Claude Desktop | Cursor/Antigravity | Gemini CLI |
+
+### Shell Tool 模式：把操作系统变成工具箱
+
+当前流行的一种工程方法是**不封装**，直接让 Agent 执行 CLI 命令：
+
+```python
+@tool
+def run_shell(command: str) -> str:
+    """在 shell 中执行命令并返回输出"""
+    result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+    return result.stdout[:4000]
+
+# Agent 收到 "扫描 example.com" → 自主决定执行 nmap -sV example.com
+```
+
+**模型如何知道 CLI 工具的用法？** 靠两件事：
+
+1. **预训练知识**：大模型训练时读过 man pages、Stack Overflow、GitHub 脚本，天生知道 `nmap`、`curl`、`dig` 怎么用
+2. **System Prompt 引导**：通过提示词告知可用工具列表和使用示例
+
+### Skill + Shell 组合：解决冷门工具问题
+
+对于模型训练数据中覆盖不足的 CLI 工具（如 `nuclei`、`subfinder`、`httpx` 等），可以通过 **Skill 的方式将使用说明注入给模型**：
+
+```markdown
+# SKILL.md — 给 Agent 的 nuclei 使用指南
+可用命令：
+- nuclei -u <url> -t cves/     # 扫描已知 CVE
+- nuclei -l urls.txt -t xss/   # 批量 XSS 检测
+- nuclei -u <url> -severity critical  # 只报高危
+```
+
+Agent 在执行前读取 SKILL.md，就像工程师翻阅工具手册一样，弥补了预训练知识的空白。
+
+### 实践建议
+
+- **核心工具**：用 Function Calling / MCP 封装（确定性强，参数可控）
+- **长尾 CLI 工具**：用 Shell Tool + Skill 补充（灵活但需人工确认）
+- **安全红线**：Shell Tool 必须配合命令白名单、沙箱执行或人工审批
 
 ---
 
