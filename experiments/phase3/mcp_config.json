@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "security-tools": {
+      "command": "wsl",
+      "args": [
+        "-e", "bash", "-c",
+        "cd /mnt/d/Code/BeginningWithAI && source wsl_venv/bin/activate && python experiments/phase3/exp3_4_mcp_server.py"
+      ]
+    }
+  }
+}

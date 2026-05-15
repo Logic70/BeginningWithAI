@@ -65,14 +65,14 @@ pip install langchain langchain-openai langchain-ollama
 ```
 # .env（⚠️ 请确认项目根目录的 .gitignore 中包含 .env，避免 API Key 泄露）
 OPENAI_API_KEY=sk-xxx                          # 你的 API Key
-OPENAI_BASE_URL=https://api.openai.com/v1      # 可替换为其他平台 URL
-OPENAI_MODEL=gpt-4o-mini                       # 云端模型名称
+OPENAI_BASE_URL=https://opencode.ai/zen/go/v1      # 可替换为其他平台 URL
+OPENAI_MODEL=deepseek-v4-pro                       # 云端模型名称
 ```
 
 常见平台的 `OPENAI_BASE_URL`：
 | 平台 | Base URL |
 |------|----------|
-| OpenAI | `https://api.openai.com/v1` |
+| OpenCode Go | `https://opencode.ai/zen/go/v1` |
 | DeepSeek | `https://api.deepseek.com` |
 | 智谱 AI | `https://open.bigmodel.cn/api/paas/v4` |
 | 硅基流动 | `https://api.siliconflow.cn/v1` |
@@ -344,9 +344,9 @@ load_dotenv()
 # 初始化客户端（支持任何 OpenAI 兼容平台）
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
-    base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+    base_url=os.getenv("OPENAI_BASE_URL", "https://opencode.ai/zen/go/v1"),
 )
-MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+MODEL = os.getenv("OPENAI_MODEL", "deepseek-v4-pro")
 
 
 def simple_chat(prompt: str) -> str:
@@ -442,7 +442,7 @@ def get_llm(backend: str = "ollama"):
         return ChatOllama(model="qwen2.5:7b")
     elif backend == "openai":
         return ChatOpenAI(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            model=os.getenv("OPENAI_MODEL", "deepseek-v4-pro"),
             api_key=os.getenv("OPENAI_API_KEY"),
             base_url=os.getenv("OPENAI_BASE_URL"),
         )
@@ -693,7 +693,7 @@ class ChatCLI:
             api_key=os.getenv("OPENAI_API_KEY"),
             base_url=os.getenv("OPENAI_BASE_URL"),
         )
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        self.model = os.getenv("OPENAI_MODEL", "deepseek-v4-pro")
         self.messages = []
         self.system_prompt = """你是一个专业的网络安全助手。
 你精通各类安全技术，包括渗透测试、漏洞分析、安全开发等。
@@ -821,7 +821,7 @@ def get_llm(backend: str = "ollama"):
         return ChatOllama(model="qwen2.5:7b", base_url=ollama_host)
     elif backend == "openai":
         return ChatOpenAI(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            model=os.getenv("OPENAI_MODEL", "deepseek-v4-pro"),
             api_key=os.getenv("OPENAI_API_KEY"),
             base_url=os.getenv("OPENAI_BASE_URL"),
         )
@@ -1207,7 +1207,7 @@ from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("OPENAI_BASE_URL"))
 
 response = client.chat.completions.create(
-    model="qwen3.5-plus",
+    model="deepseek-v4-pro",
     messages=[{"role": "user", "content": "你好"}],
     stream=True
 )

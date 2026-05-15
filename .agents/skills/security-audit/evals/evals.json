@@ -1,0 +1,88 @@
+{
+  "skill_name": "security-audit",
+  "evals": [
+    {
+      "id": 1,
+      "name": "c-basic-vulnerabilities",
+      "prompt": "Audit this C file for security vulnerabilities: .claude/skills/security-audit/scripts/test_vulnerable.c",
+      "expected_output": "Report should identify strcpy, gets, sprintf as HIGH/CRITICAL severity, and suggest secure alternatives",
+      "files": [".claude/skills/security-audit/scripts/test_vulnerable.c"],
+      "assertions": [
+        {
+          "name": "detects_dangerous_gets",
+          "description": "Report must mention gets() as CRITICAL or HIGH severity",
+          "type": "text_contains",
+          "target": "output",
+          "expected": ["gets", "CRITICAL"]
+        },
+        {
+          "name": "detects_strcpy_usage",
+          "description": "Report must identify strcpy as buffer overflow risk",
+          "type": "text_contains",
+          "target": "output",
+          "expected": ["strcpy", "HIGH"]
+        },
+        {
+          "name": "suggests_secure_alternatives",
+          "description": "Report should suggest strncpy, fgets as alternatives",
+          "type": "text_contains",
+          "target": "output",
+          "expected": ["strncpy", "fgets"]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "c-advanced-vulnerabilities",
+      "prompt": "Run a comprehensive security audit on this C file and identify all vulnerabilities including integer overflow, array bounds, and strncpy issues: .claude/skills/security-audit/scripts/test_advanced.c",
+      "expected_output": "Should detect integer overflow in malloc multiplication, array access without bounds check, strncpy without null terminator, and size_t negative assignment",
+      "files": [".claude/skills/security-audit/scripts/test_advanced.c"],
+      "assertions": [
+        {
+          "name": "detects_integer_overflow",
+          "description": "Should detect unchecked multiplication in malloc",
+          "type": "text_contains",
+          "target": "output",
+          "expected": ["multiplication", "overflow"]
+        },
+        {
+          "name": "detects_array_bounds",
+          "description": "Should flag unchecked array access",
+          "type": "text_contains",
+          "target": "output",
+          "expected": ["array", "bounds"]
+        },
+        {
+          "name": "detects_strncpy_null",
+          "description": "Should warn about strncpy missing null terminator",
+          "type": "text_contains",
+          "target": "output",
+          "expected": ["strncpy", "null"]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "audit-script-execution",
+      "prompt": "Run the security audit script on test_advanced.c and show me the results in markdown format",
+      "expected_output": "Should execute audit.py successfully and generate formatted report with findings",
+      "files": [".claude/skills/security-audit/scripts/test_advanced.c", ".claude/skills/security-audit/scripts/audit.py"],
+      "assertions": [
+        {
+          "name": "script_executes_successfully",
+          "description": "audit.py should run without errors",
+          "type": "exit_code",
+          "target": "script",
+          "expected": 0
+        },
+        {
+          "name": "report_has_structure",
+          "description": "Output should have proper markdown structure",
+          "type": "text_contains",
+          "target": "output",
+          "expected": ["# C 语言安全审计报告", "Level 1", "Level 2"]
+        }
+      ]
+    }
+  ]
+}

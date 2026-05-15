@@ -1,0 +1,117 @@
+{
+  "skill_name": "security-audit",
+  "evals": [
+    {
+      "id": "dvcp-memory-vulns",
+      "prompt": "对 test_dvc/dvcp.c 进行安全审计，识别所有内存安全漏洞",
+      "expected_output": "应检测到：整数溢出、堆缓冲区溢出、双重释放、Use-After-Free、整数下溢、除零、栈溢出、内存泄漏、越界访问",
+      "files": ["test_dvc/dvcp.c"],
+      "assertions": [
+        {
+          "name": "detects_integer_overflow",
+          "description": "检测整数溢出",
+          "check": "output.contains('integer_overflow')"
+        },
+        {
+          "name": "detects_double_free",
+          "description": "检测双重释放",
+          "check": "output.contains('double free') || output.contains('multiple_free')"
+        },
+        {
+          "name": "detects_use_after_free",
+          "description": "检测Use-After-Free",
+          "check": "output.contains('use after free') || output.contains('use-after-free')"
+        },
+        {
+          "name": "detects_divide_by_zero",
+          "description": "检测除零",
+          "check": "output.contains('divide_by_zero')"
+        },
+        {
+          "name": "detects_memory_leak",
+          "description": "检测内存泄漏",
+          "check": "output.contains('memory_leak') || output.contains('potential_memory_leak')"
+        }
+      ]
+    },
+    {
+      "id": "vulnerable-injection-vulns",
+      "prompt": "对 test_vulnerable.c 进行安全审计，识别注入漏洞和并发问题",
+      "expected_output": "应检测到：gets使用、硬编码密码、strcpy/strcat/sprintf溢出、格式化字符串、命令注入、scanf无限制、TOCTOU、死锁风险",
+      "files": [".claude/skills/security-audit/scripts/test_vulnerable.c"],
+      "assertions": [
+        {
+          "name": "detects_gets",
+          "description": "检测gets函数",
+          "check": "output.contains('gets') || output.contains('dangerous_gets')"
+        },
+        {
+          "name": "detects_hardcoded_creds",
+          "description": "检测硬编码凭证",
+          "check": "output.contains('hardcoded') || output.contains('password') || output.contains('API_KEY')"
+        },
+        {
+          "name": "detects_command_injection",
+          "description": "检测命令注入",
+          "check": "output.contains('system') || output.contains('command') || output.contains('injection')"
+        },
+        {
+          "name": "detects_format_string",
+          "description": "检测格式化字符串",
+          "check": "output.contains('format_string')"
+        },
+        {
+          "name": "detects_toctou",
+          "description": "检测TOCTOU竞争条件",
+          "check": "output.contains('TOCTOU') || output.contains('access')"
+        }
+      ]
+    },
+    {
+      "id": "audit-level1-only",
+      "prompt": "使用audit.py对test_dvc/dvcp.c进行Level 1代码检查",
+      "expected_output": "应生成结构化的Level 1检测报告，包含漏洞类型、位置、修复建议",
+      "files": ["test_dvc/dvcp.c"],
+      "assertions": [
+        {
+          "name": "generates_structured_report",
+          "description": "生成结构化报告",
+          "check": "output.contains('##') && output.contains('###')"
+        },
+        {
+          "name": "includes_file_locations",
+          "description": "包含文件位置信息",
+          "check": "output.contains('.c:')"
+        },
+        {
+          "name": "includes_fix_suggestions",
+          "description": "包含修复建议",
+          "check": "output.contains('修复') || output.contains('建议')"
+        }
+      ]
+    },
+    {
+      "id": "audit-combined-mode",
+      "prompt": "对test_dvc/dvcp.c进行完整的双重审计（Level 1 + Level 2）",
+      "expected_output": "应先运行Level 1扫描，然后对复杂区域进行AI深度分析",
+      "files": ["test_dvc/dvcp.c"],
+      "assertions": [
+        {
+          "name": "performs_level1_first",
+          "description": "先执行Level 1",
+          "check": "actions.contains('audit.py --mode code')"
+        },
+        {
+          "name": "identifies_level2_regions",
+          "description": "标识Level 2分析区域",
+          "check": "output.contains('Level 2') || output.contains('AI分析')"
+        },
+        {
+          "name": "provides_ai_analysis",
+          "description": "提供AI深度分析",
+          "check": "output.contains('攻击场景') || output.contains('利用链')"
+        }
+      ]
+    }
+  ]
+}

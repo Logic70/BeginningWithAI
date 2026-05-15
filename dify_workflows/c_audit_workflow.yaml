@@ -1,0 +1,224 @@
+# Dify Workflow: C Code Security Audit
+# 从 c-code-audit-workflow 转换的 Dify 工作流
+
+app:
+  name: C Code Security Auditor
+  mode: workflow
+  description: 两级C代码安全审计 - 模式检测 + AI深度分析
+
+workflow:
+  nodes:
+    # 节点1: 输入
+    - id: start
+      type: start
+      data:
+        title: 开始
+        variables:
+          - name: target
+            type: text
+            description: Git URL、本地目录路径或C文件路径
+            required: true
+          - name: audit_level
+            type: select
+            description: 审计级别
+            options:
+              - value: full
+                label: 完整 (Level 1 + 2)
+              - value: level1
+                label: 仅模式检测 (快速)
+              - value: level2
+                label: 仅AI分析 (深入)
+            default: full
+
+    # 节点2: Level 1 - 模式扫描
+    - id: pattern_scanner
+      type: llm
+      data:
+        title: Level 1 - 危险函数检测
+        model:
+          provider: openai
+          name: gpt-4
+          mode: chat
+        prompt: |
+          你是C代码安全模式扫描器。分析以下C代码中的危险模式。
+
+          ## 检查目标
+          {{#start.target#}}
+
+          ## 检查清单
+          - 危险函数: gets, strcpy, strcat, sprintf, system, popen
+          - 缺少边界检查
+          - 格式化字符串漏洞
+          - 未检查返回值
+          - 硬编码凭证
+          - 弱随机数生成
+
+          ## 输出格式 (JSON)
+          {
+            "level": 1,
+            "findings": [
+              {
+                "severity": "critical|high|medium|low",
+                "cwe": "CWE-XXX",
+                "pattern": "dangerous_function",
+                "description": "描述",
+                "fix": "修复建议"
+              }
+            ]
+          }
+        temperature: 0.1
+
+    # 节点3: Level 2 - 安全分析
+    - id: security_analyzer
+      type: llm
+      data:
+        title: Level 2 - 安全分析
+        model:
+          provider: openai
+          name: gpt-4
+          mode: chat
+        prompt: |
+          你是C代码安全专家，执行污点分析。
+
+          ## 分析目标
+          {{#start.target#}}
+
+          ## 分析任务
+          1. **污点分析**: 跟踪用户输入从source到sink
+          2. **命令注入**: 检查未净化的system调用
+          3. **路径遍历**: 验证文件路径净化
+          4. **认证**: 检查硬编码凭证
+
+          ## 输出格式 (JSON)
+          {
+            "level": 2,
+            "agent": "security",
+            "findings": [...]
+          }
+        temperature: 0.2
+      condition: "{{#start.audit_level# == 'full' || #start.audit_level# == 'level2' }}"
+
+    # 节点4: Level 2 - 内存分析
+    - id: memory_analyzer
+      type: llm
+      data:
+        title: Level 2 - 内存安全分析
+        model:
+          provider: openai
+          name: gpt-4
+          mode: chat
+        prompt: |
+          你是C内存安全专家。分析内存相关漏洞。
+
+          ## 分析目标
+          {{#start.target#}}
+
+          ## 分析任务
+          1. **缓冲区溢出**: strcpy, strcat等无边界检查
+          2. **Use-after-free**: 悬挂指针
+          3. **Double-free**: 多次free
+          4. **内存泄漏**: 未释放的分配
+          5. **整数溢出**: 大小计算
+
+          ## 输出格式 (JSON)
+          {
+            "level": 2,
+            "agent": "memory",
+            "findings": [...]
+          }
+        temperature: 0.2
+      condition: "{{#start.audit_level# == 'full' || #start.audit_level# == 'level2' }}"
+
+    # 节点5: 合并结果
+    - id: merge_results
+      type: code
+      data:
+        title: 合并分析结果
+        language: python3
+        code: |
+          import json
+
+          findings = []
+          severity_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
+
+          # 解析各分析器结果
+          for node_id in ['pattern_scanner', 'security_analyzer', 'memory_analyzer']:
+              try:
+                  result = json.loads('{{#' + node_id + '.text#}}' or '{}')
+                  findings.extend(result.get('findings', []))
+              except:
+                  pass
+
+          # 按严重度排序
+          findings.sort(key=lambda x: severity_order.get(x.get('severity'), 4))
+
+          # 统计
+          summary = {
+              'critical': sum(1 for f in findings if f.get('severity') == 'critical'),
+              'high': sum(1 for f in findings if f.get('severity') == 'high'),
+              'medium': sum(1 for f in findings if f.get('severity') == 'medium'),
+              'low': sum(1 for f in findings if f.get('severity') == 'low')
+          }
+
+          output = {
+              'target': '{{#start.target#}}',
+              'findings_count': len(findings),
+              'summary': summary,
+              'findings': findings[:50]  # 限制数量
+          }
+
+          print(json.dumps(output, ensure_ascii=False, indent=2))
+
+    # 节点6: 生成报告
+    - id: generate_report
+      type: llm
+      data:
+        title: 生成审计报告
+        model:
+          provider: openai
+          name: gpt-4
+          mode: chat
+        prompt: |
+          生成专业的C代码安全审计报告。
+
+          ## 分析数据
+          ```json
+          {{#merge_results.result#}}
+          ```
+
+          ## 报告格式 (Markdown)
+
+          # C代码安全审计报告
+
+          ## 摘要
+          - 目标: {{target}}
+          - 发现总数: {{findings_count}}
+          - 严重: {{summary.critical}} | 高: {{summary.high}} | 中: {{summary.medium}} | 低: {{summary.low}}
+
+          ## 按严重度分类
+
+          ### 严重问题
+          [列出严重问题]
+
+          ### 高危问题
+          [列出高危问题]
+
+          ## 修复建议
+          [优先修复建议]
+
+          ## 结论
+          [总体评估]
+        temperature: 0.3
+
+    # 节点7: 结束
+    - id: end
+      type: end
+      data:
+        title: 结束
+        outputs:
+          - name: report
+            type: string
+            value: "{{#generate_report.text#}}"
+          - name: json_data
+            type: string
+            value: "{{#merge_results.result#}}"

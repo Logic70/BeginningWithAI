@@ -1,0 +1,649 @@
+# Dify Workflow: C Code Security Audit (Complete)
+# 完整版 - 包含所有缺失节点
+# 从 c-code-audit-workflow 转换，保持逻辑一致
+
+app:
+  name: C Code Security Auditor Complete
+  mode: workflow
+  description: 两级C代码安全审计 - 支持文件上传、三分析器并行、SARIF导出
+
+workflow:
+  nodes:
+    # ========== Stage 1: 输入发现 ==========
+    - id: start
+      type: start
+      data:
+        title: 开始
+        description: 上传C代码文件或粘贴代码进行安全审计
+        variables:
+          - name: input_type
+            type: select
+            description: 输入类型
+            options:
+              - value: file
+                label: 上传文件
+              - value: code
+                label: 粘贴代码
+              - value: git
+                label: Git URL
+            default: file
+          - name: audit_level
+            type: select
+            description: 审计级别
+            options:
+              - value: full
+                label: 完整 (Level 1 + 2)
+              - value: level1
+                label: 仅模式检测 (快速)
+              - value: level2
+                label: 仅AI分析 (深入)
+            default: full
+          - name: max_files
+            type: number
+            description: 最大文件数 (默认10，最多50)
+            default: 10
+
+    # 条件分支：根据输入类型处理
+    - id: file_upload
+      type: file-upload
+      data:
+        title: 上传C代码文件
+        description: 支持 .c .h 文件
+        allowed_extensions: [".c", ".h"]
+        max_size: 5242880  # 5MB
+        multiple: true
+      depends_on: [start]
+      condition: "{{#start.input_type# == 'file'}}"
+
+    - id: code_input
+      type: http-request
+      data:
+        title: 代码输入
+        method: POST
+        url: "data:text/plain,{{#start.code_text#}}"
+      depends_on: [start]
+      condition: "{{#start.input_type# == 'code'}}"
+
+    # 合并输入
+    - id: input_merge
+      type: code
+      data:
+        title: 合并输入数据
+        language: python3
+        code: |
+          import json
+          import re
+
+          files = []
+
+          # 处理文件上传
+          file_data = '{{#file_upload.files#}}' if '{{#file_upload.files#}}' else '[]'
+          try:
+              uploaded = json.loads(file_data)
+              for f in uploaded[:int('{{#start.max_files#}}' or 10)]:
+                  files.append({
+                      'name': f.get('name', 'unknown.c'),
+                      'content': f.get('content', ''),
+                      'size': f.get('size', 0)
+                  })
+          except:
+              pass
+
+          # 处理直接输入
+          if not files and '{{#start.code_text#}}':
+              files.append({
+                  'name': 'input.c',
+                  'content': '{{#start.code_text#}}',
+                  'size': len('{{#start.code_text#}}')
+              })
+
+          # 过滤测试文件和vendor
+          exclude_patterns = [r'test', r'vendor', r'third_party', r'\.min\.c$', r'_test\.c$']
+          filtered = []
+          for f in files:
+              if not any(re.search(p, f['name'], re.I) for p in exclude_patterns):
+                  filtered.append(f)
+
+          # 限制文件数
+          max_files = min(int('{{#start.max_files#}}' or 10), 50)
+          filtered = filtered[:max_files]
+
+          # 批处理：每批最多10个文件
+          batches = [filtered[i:i+10] for i in range(0, len(filtered), 10)]
+
+          output = {
+              'total_files': len(filtered),
+              'batches': batches,
+              'files': filtered
+          }
+          print(json.dumps(output, ensure_ascii=False))
+      depends_on: [file_upload, code_input]
+
+    # ========== Stage 2: Level 1 模式扫描 ==========
+    - id: pattern_scanner
+      type: llm
+      data:
+        title: Level 1 - 危险函数模式扫描
+        model:
+          provider: openai
+          name: gpt-4
+          mode: chat
+        prompt: |
+          你是Level 1 C代码安全扫描器。使用模式匹配检测常见漏洞，不进行复杂分析。
+
+          ## 分析文件
+          {{#input_merge.result.files#}}
+
+          ## 检测模式 (发现即标记)
+
+          ### 危险函数
+          - strcpy(dest, src) → CWE-120
+          - strcat(dest, src) → CWE-120
+          - sprintf(buf, fmt, ...) → CWE-120
+          - gets(buf) → CWE-242 (Critical)
+          - memcpy/memmove with unchecked size
+          - printf(user_input) → CWE-134 格式化字符串
+          - system(cmd) → CWE-78 命令注入
+          - popen(cmd, mode) → CWE-78
+          - fopen(path) with user-controlled path → CWE-22
+
+          ### 输入处理
+          - scanf("%s", buf) without bounds → CWE-120
+          - gets() → Always critical
+
+          ### 敏感信息泄露
+          - printf with keywords: password, secret, token, key, credential, auth → CWE-532
+
+          ### 返回值检查
+          - malloc() without NULL check → CWE-252
+          - fopen() without error check → CWE-252
+          - scanf() return ignored → CWE-252
+
+          ### 整数问题
+          - Array access buf[i] without bounds check → CWE-129
+          - Variable Length Array from user input → CWE-789
+
+          ## 严重度标准
+          - **critical**: gets(), unchecked strcpy with user input, format string with user input
+          - **high**: strcpy/strcat/sprintf without size check, system() with user input
+          - **medium**: scanf("%s"), fopen with user input, ignored return from malloc
+          - **low**: Information leak via debug print, missing bounds check
+
+          ## 输出格式 (每行一个JSON对象，无代码块)
+          每个发现输出一行:
+          {"level":1,"severity":"critical|high|medium|low","file":"<filename>","line":<number>,"column":<number>,"cwe":"CWE-XXX","pattern":"dangerous-function|missing-bounds-check|format-string|command-injection|path-traversal|info-leak|ignored-return|uncontrolled-vla","description":"<发现了什么>","code_snippet":"<相关代码片段，最多80字符>","fix_suggestion":"<如何修复>"}
+
+          如果没有问题，输出:
+          {"level":1,"status":"no_issues","message":"No Level 1 patterns detected.","file_count":<文件数>}
+
+          ## 规则
+          - 只报告实际看到的模式
+          - 行号要精确（函数调用开始的行）
+          - 包含准确的代码片段
+          - 给出具体的安全替代方案
+          - 不要推断跨函数数据流
+          - 不确定时标记为medium并注明
+        temperature: 0.1
+        max_tokens: 4000
+      depends_on: [input_merge]
+      condition: "{{#start.audit_level# == 'full' || #start.audit_level# == 'level1' }}"
+
+    # ========== Stage 3: Level 2 AI分析 (3个并行分析器) ==========
+
+    # 3.1 Security Analyzer
+    - id: security_analyzer
+      type: llm
+      data:
+        title: Level 2 - 安全分析器 (污点分析)
+        model:
+          provider: openai
+          name: gpt-4
+          mode: chat
+        prompt: |
+          你是C代码安全分析专家，专注于复杂漏洞检测。
+
+          ## 分析文件
+          {{#input_merge.result.files#}}
+
+          ## 分析焦点
+
+          1. **污点分析 (Taint Analysis)**
+             - 跟踪用户输入从source到sink
+             - Sources: scanf, gets, fgets, argv, env vars, file reads
+             - Sinks: system, popen, exec, strcpy to buffer, sprintf
+
+          2. **命令注入**
+             - system() 或 popen() 使用未净化输入
+             - exec系列函数的用户控制参数
+
+          3. **路径遍历**
+             - fopen/remove/rename 使用用户输入路径
+             - 缺少路径规范化
+
+          4. **硬编码凭证**
+             - 密码、API密钥、token硬编码
+             - 默认凭证
+
+          5. **弱加密**
+             - 使用已破解算法 (MD5, SHA1, DES)
+             - 不安全的随机数生成 (rand())
+
+          6. **竞争条件**
+             - 检查和使用之间的时间窗口 (TOCTOU)
+             - 信号处理程序中的不安全操作
+
+          ## 输出格式 (每行一个JSON)
+          {"level":2,"severity":"critical|high|medium|low","file":"<path>","line":<number>,"column":<number>,"cwe":"CWE-XXX","category":"taint|injection|crypto|race|auth","description":"<发现了什么>","attack_scenario":"<攻击者如何利用>","data_flow":"<source → 传播路径 → sink>","suggestion":"<修复建议>"}
+
+          如果没有问题:
+          {"level":2,"status":"no_issues","message":"No Level 2 security issues detected.","agent":"security"}
+
+          ## 严重度指南
+          - **critical**: 可远程利用的命令注入、SQL注入、无限制文件上传
+          - **high**: 本地利用的注入、硬编码凭证、路径遍历
+          - **medium**: 弱加密、需要复杂利用链的漏洞
+          - **low**: 信息泄露、安全相关的逻辑缺陷
+        temperature: 0.2
+        max_tokens: 4000
+      depends_on: [input_merge]
+      condition: "{{#start.audit_level# == 'full' || #start.audit_level# == 'level2' }}"
+
+    # 3.2 Memory Analyzer
+    - id: memory_analyzer
+      type: llm
+      data:
+        title: Level 2 - 内存安全分析器
+        model:
+          provider: openai
+          name: gpt-4
+          mode: chat
+        prompt: |
+          你是C代码内存安全专家，专注于检测复杂内存漏洞。
+
+          ## 分析文件
+          {{#input_merge.result.files#}}
+
+          ## 分析焦点
+
+          1. **Use-After-Free (UAF)**
+             - free()后继续使用指针
+             - 函数返回后使用局部变量指针
+             - 双重释放导致的UAF
+
+          2. **Double-Free**
+             - 同一内存被释放两次
+             - 条件分支中的重复释放
+
+          3. **内存泄漏**
+             - malloc/calloc后没有对应free
+             - 错误处理路径中的泄漏
+             - 复杂数据结构中的泄漏
+
+          4. **缓冲区溢出**
+             - 堆溢出: malloc后写入超过分配大小
+             - 栈溢出: 大数组或深度递归
+             - Off-by-one错误
+
+          5. **未初始化内存**
+             - 变量声明后未初始化就使用
+             - malloc后未初始化就读取
+             - 结构体部分初始化
+
+          6. **NULL指针解引用**
+             - malloc返回值未检查
+             - 函数返回NULL后未检查
+             - 链表遍历中的NULL访问
+
+          7. **整数溢出**
+             - 大小计算溢出: malloc(size * count)
+             - 数组索引计算溢出
+             - 有符号/无符号混淆
+
+          ## 输出格式 (每行一个JSON)
+          {"level":2,"severity":"critical|high|medium|low","file":"<path>","line":<number>,"column":<number>,"cwe":"CWE-XXX","type":"uaf|double-free|leak|overflow|uninitialized|null-deref|integer-overflow","description":"<发现了什么>","memory_state":"<内存状态描述>","consequence":"<崩溃/信息泄露/代码执行>","suggestion":"<修复建议>"}
+
+          如果没有问题:
+          {"level":2,"status":"no_issues","message":"No Level 2 memory issues detected.","agent":"memory"}
+
+          ## 严重度指南
+          - **critical**: 可利用的远程代码执行 (UAF、堆溢出)
+          - **high**: 本地代码执行、确定性的崩溃
+          - **medium**: 内存泄漏(性能问题)、不确定的竞态条件
+          - **low**: 小的泄漏、需要特定条件触发的UAF
+        temperature: 0.2
+        max_tokens: 4000
+      depends_on: [input_merge]
+      condition: "{{#start.audit_level# == 'full' || #start.audit_level# == 'level2' }}"
+
+    # 3.3 Logic Analyzer (新增 - 原工作流有但Dify缺失)
+    - id: logic_analyzer
+      type: llm
+      data:
+        title: Level 2 - 逻辑分析器
+        model:
+          provider: openai
+          name: gpt-4
+          mode: chat
+        prompt: |
+          你是C代码逻辑分析专家，专注于检测控制流和逻辑错误。
+
+          ## 分析文件
+          {{#input_merge.result.files#}}
+
+          ## 分析焦点
+
+          1. **竞争条件 (Race Conditions)**
+             - TOCTOU: 检查和使用之间的时间窗口
+             - 非原子性的检查-使用模式
+             - 信号处理程序中的不安全操作
+             - 多线程中的未保护共享状态
+
+          2. **逻辑缺陷 (Logic Flaws)**
+             - Off-by-one错误: for循环边界
+             - 整数溢出: 算术运算
+             - 有符号/无符号混淆
+             - 短路求值bug
+
+          3. **API误用 (API Misuse)**
+             - 错误的API调用顺序
+             - 缺少初始化
+             - 错误的错误处理模式
+             - OpenSSL/crypto API误用
+
+          4. **死代码 (Dead Code)**
+             - return后的不可达代码
+             - 永远为真/假的条件
+             - 未使用的变量
+
+          5. **控制流问题**
+             - Switch语句缺少break
+             - 错误的fall-through
+             - 嵌套循环中的break/continue
+             - goto误用
+
+          6. **资源状态错误**
+             - 使用前未检查资源就绪
+             - 释放后继续使用
+             - 资源状态混淆
+
+          ## 输出格式 (每行一个JSON)
+          {"level":2,"severity":"high|medium|low","file":"<path>","line":<number>,"column":<number>,"cwe":"CWE-XXX","category":"logic|race|api-misuse|dead-code|control-flow|resource-state","description":"<发现了什么>","impact":"<行为后果>","suggestion":"<如何修复>"}
+
+          如果没有问题:
+          {"level":2,"status":"no_issues","message":"No Level 2 logic issues detected.","agent":"logic"}
+
+          ## 严重度指南
+          - **high**: 导致崩溃或安全问题的逻辑缺陷、API误用
+          - **medium**: 有非平凡利用条件的竞争条件、有功能影响的逻辑bug
+          - **low**: 死代码、未使用变量、次要逻辑改进
+        temperature: 0.2
+        max_tokens: 4000
+      depends_on: [input_merge]
+      condition: "{{#start.audit_level# == 'full' || #start.audit_level# == 'level2' }}"
+
+    # ========== Stage 4: 合并结果和生成报告 ==========
+
+    # 4.1 解析和合并所有结果
+    - id: merge_results
+      type: code
+      data:
+        title: 合并所有分析结果
+        language: python3
+        code: |
+          import json
+          import re
+
+          all_findings = []
+          severity_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
+
+          # 解析函数
+          def parse_findings(text, level):
+              findings = []
+              if not text:
+                  return findings
+              # 提取JSON对象
+              for line in text.strip().split('\n'):
+                  line = line.strip()
+                  if not line:
+                      continue
+                  try:
+                      # 尝试解析整行
+                      obj = json.loads(line)
+                      if 'status' in obj and obj['status'] == 'no_issues':
+                          continue
+                      if 'findings' in obj:
+                          findings.extend(obj['findings'])
+                      elif 'severity' in obj:
+                          findings.append(obj)
+                  except:
+                      # 尝试提取行内的JSON
+                      matches = re.findall(r'\{[^}]+\}', line)
+                      for m in matches:
+                          try:
+                              obj = json.loads(m)
+                              if 'severity' in obj:
+                                  findings.append(obj)
+                          except:
+                              pass
+              return findings
+
+          # 解析各分析器输出
+          level1_text = '{{#pattern_scanner.text#}}'
+          security_text = '{{#security_analyzer.text#}}'
+          memory_text = '{{#memory_analyzer.text#}}'
+          logic_text = '{{#logic_analyzer.text#}}'
+
+          level1_findings = parse_findings(level1_text, 1)
+          security_findings = parse_findings(security_text, 2)
+          memory_findings = parse_findings(memory_text, 2)
+          logic_findings = parse_findings(logic_text, 2)
+
+          all_findings.extend(level1_findings)
+          all_findings.extend(security_findings)
+          all_findings.extend(memory_findings)
+          all_findings.extend(logic_findings)
+
+          # 去重: 相同文件+行+相似描述
+          seen = set()
+          unique_findings = []
+          for f in all_findings:
+              key = (f.get('file', ''), f.get('line', 0), f.get('cwe', ''), f.get('description', '')[:50])
+              if key not in seen:
+                  seen.add(key)
+                  unique_findings.append(f)
+
+          # 按严重度排序
+          unique_findings.sort(key=lambda x: severity_order.get(x.get('severity', 'low'), 4))
+
+          # 统计
+          summary = {
+              'total': len(unique_findings),
+              'critical': sum(1 for f in unique_findings if f.get('severity') == 'critical'),
+              'high': sum(1 for f in unique_findings if f.get('severity') == 'high'),
+              'medium': sum(1 for f in unique_findings if f.get('severity') == 'medium'),
+              'low': sum(1 for f in unique_findings if f.get('severity') == 'low'),
+              'level1': len(level1_findings),
+              'level2_security': len(security_findings),
+              'level2_memory': len(memory_findings),
+              'level2_logic': len(logic_findings)
+          }
+
+          # 最终判决
+          if summary['critical'] > 0:
+              verdict = 'CRITICAL_ISSUES'
+          elif summary['high'] > 0:
+              verdict = 'NEEDS_WORK'
+          elif summary['total'] == 0:
+              verdict = 'PASS'
+          else:
+              verdict = 'ACCEPTABLE'
+
+          output = {
+              'target': '{{#input_merge.result.total_files#}} files',
+              'timestamp': '{{#sys.time#}}',
+              'summary': summary,
+              'verdict': verdict,
+              'findings': unique_findings
+          }
+
+          print(json.dumps(output, ensure_ascii=False, indent=2))
+      depends_on: [pattern_scanner, security_analyzer, memory_analyzer, logic_analyzer]
+
+    # 4.2 生成Markdown报告
+    - id: generate_markdown_report
+      type: llm
+      data:
+        title: 生成Markdown审计报告
+        model:
+          provider: openai
+          name: gpt-4
+          mode: chat
+        prompt: |
+          生成专业的C代码安全审计Markdown报告。
+
+          ## 输入数据
+          ```json
+          {{#merge_results.result#}}
+          ```
+
+          ## 要求格式
+
+          # C代码安全审计报告
+
+          ## 目标
+          {{target}}
+
+          ## 执行摘要
+          - **分析文件数**: {{target}}
+          - **发现问题数**: {{summary.total}}
+          - **严重**: {{summary.critical}} | **高危**: {{summary.high}} | **中危**: {{summary.medium}} | **低危**: {{summary.low}}
+
+          ## 按级别统计
+          - Level 1 (模式检测): {{summary.level1}}
+          - Level 2 安全分析: {{summary.level2_security}}
+          - Level 2 内存分析: {{summary.level2_memory}}
+          - Level 2 逻辑分析: {{summary.level2_logic}}
+
+          ## 关键发现 (Top 10)
+          {{#findings}}{{#if @index < 10}}
+          {{@index}}. [{{file}}:{{line}}] **{{severity}}** | {{cwe}}: {{description}}
+          {{/if}}{{/findings}}
+
+          ## 严重问题详情
+          {{#findings}}{{#if severity == 'critical'}}
+          ### {{file}}:{{line}} - {{cwe}}
+          - **描述**: {{description}}
+          - **代码**: `{{code_snippet}}`
+          - **修复**: {{fix_suggestion}}
+          {{/if}}{{/findings}}
+
+          ## 高危问题详情
+          {{#findings}}{{#if severity == 'high'}}
+          ### {{file}}:{{line}} - {{cwe}}
+          - **描述**: {{description}}
+          - **修复**: {{fix_suggestion}}
+          {{/if}}{{/findings}}
+
+          ## 修复建议总结
+          1. 优先修复所有Critical和High级别问题
+          2. 使用安全替代函数 (strncpy替代strcpy)
+          3. 添加边界检查
+          4. 检查所有内存分配返回值
+
+          ## 最终判决: {{verdict}}
+          - **CRITICAL_ISSUES**: 发现严重漏洞，必须立即修复
+          - **NEEDS_WORK**: 发现高危漏洞，发布前需修复
+          - **ACCEPTABLE**: 中低危问题，可后续修复
+          - **PASS**: 无安全问题
+        temperature: 0.3
+        max_tokens: 4000
+      depends_on: [merge_results]
+
+    # 4.3 生成SARIF报告 (标准安全扫描格式)
+    - id: generate_sarif_report
+      type: code
+      data:
+        title: 生成SARIF格式报告
+        language: python3
+        code: |
+          import json
+
+          data = json.loads('{{#merge_results.result#}}')
+          findings = data.get('findings', [])
+
+          sarif = {
+              "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+              "version": "2.1.0",
+              "runs": [{
+                  "tool": {
+                      "driver": {
+                          "name": "C Code Security Audit",
+                          "version": "2.0",
+                          "informationUri": "https://github.com/langgenius/dify"
+                      }
+                  },
+                  "results": []
+              }]
+          }
+
+          severity_map = {
+              'critical': 'error',
+              'high': 'error',
+              'medium': 'warning',
+              'low': 'note'
+          }
+
+          for f in findings:
+              result = {
+                  "ruleId": f.get('cwe', 'CWE-Unknown'),
+                  "level": severity_map.get(f.get('severity', 'low'), 'note'),
+                  "message": {
+                      "text": f.get('description', '')
+                  },
+                  "locations": [{
+                      "physicalLocation": {
+                          "artifactLocation": {
+                              "uri": f.get('file', 'unknown.c')
+                          },
+                          "region": {
+                              "startLine": f.get('line', 1),
+                              "startColumn": f.get('column', 1)
+                          }
+                      }
+                  }]
+              }
+
+              # 添加修复建议
+              fix = f.get('fix_suggestion') or f.get('suggestion')
+              if fix:
+                  result["fixes"] = [{
+                      "description": {"text": fix}
+                  }]
+
+              sarif["runs"][0]["results"].append(result)
+
+          print(json.dumps(sarif, indent=2))
+      depends_on: [merge_results]
+
+    # ========== Stage 5: 结束 ==========
+    - id: end
+      type: end
+      data:
+        title: 审计完成
+        outputs:
+          - name: markdown_report
+            type: string
+            value: "{{#generate_markdown_report.text#}}"
+          - name: json_report
+            type: string
+            value: "{{#merge_results.result#}}"
+          - name: sarif_report
+            type: string
+            value: "{{#generate_sarif_report.result#}}"
+          - name: summary
+            type: object
+            value: "{{#merge_results.result.summary#}}"
+          - name: verdict
+            type: string
+            value: "{{#merge_results.result.verdict#}}"
+      depends_on: [generate_markdown_report, generate_sarif_report]

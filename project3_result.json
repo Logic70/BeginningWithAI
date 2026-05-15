@@ -1,0 +1,333 @@
+正在扫描 C 代码: .claude\skills\security-audit\scripts\test_vulnerable.c (mode: code)...
+{
+  "target": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+  "mode": "code",
+  "files_scanned": 1,
+  "findings": [
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 19,
+      "type": "dangerous_strcpy",
+      "severity": "HIGH",
+      "description": "使用 strcpy 可能导致缓冲区溢出",
+      "code": "strcpy(buffer, input);",
+      "category": "code",
+      "suggestion": "使用 strncpy(dest, src, sizeof(dest)-1) 并确保终止符"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 56,
+      "type": "dangerous_strcpy",
+      "severity": "HIGH",
+      "description": "使用 strcpy 可能导致缓冲区溢出",
+      "code": "strcpy(ptr, \"data\");  // 可能已释放",
+      "category": "code",
+      "suggestion": "使用 strncpy(dest, src, sizeof(dest)-1) 并确保终止符"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 22,
+      "type": "dangerous_strcat",
+      "severity": "HIGH",
+      "description": "使用 strcat 可能导致缓冲区溢出",
+      "code": "strcat(buffer, \" suffix\");",
+      "category": "code",
+      "suggestion": "使用 strncat(dest, src, sizeof(dest)-strlen(dest)-1)"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 25,
+      "type": "dangerous_sprintf",
+      "severity": "HIGH",
+      "description": "使用 sprintf 可能导致缓冲区溢出",
+      "code": "sprintf(buffer, \"Result: %s\", input);",
+      "category": "code",
+      "suggestion": "使用 snprintf(buf, sizeof(buf), fmt, ...)"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 38,
+      "type": "dangerous_sprintf",
+      "severity": "HIGH",
+      "description": "使用 sprintf 可能导致缓冲区溢出",
+      "code": "sprintf(cmd, \"ping -c 1 %s\", hostname);",
+      "category": "code",
+      "suggestion": "使用 snprintf(buf, sizeof(buf), fmt, ...)"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 16,
+      "type": "dangerous_gets",
+      "severity": "CRITICAL",
+      "description": "gets 函数无法限制输入长度，极度危险",
+      "code": "gets(input);",
+      "category": "code",
+      "suggestion": "使用 fgets(buf, sizeof(buf), stdin) 替代"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 95,
+      "type": "dangerous_scanf",
+      "severity": "HIGH",
+      "description": "scanf %s 无长度限制，可能导致溢出",
+      "code": "scanf(\"%s\", buf);",
+      "category": "code",
+      "suggestion": "使用 scanf(\"%255s\", buf) 指定最大长度"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 46,
+      "type": "unchecked_malloc",
+      "severity": "MEDIUM",
+      "description": "内存分配结果未检查",
+      "code": "char *ptr = malloc(100);",
+      "category": "code",
+      "suggestion": "检查返回值: if ((ptr = malloc(size)) == NULL) { handle_error(); }"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 31,
+      "type": "format_string_vuln",
+      "severity": "HIGH",
+      "description": "格式化字符串可能包含用户输入",
+      "code": "printf(user_input);",
+      "category": "code",
+      "suggestion": "使用 printf(\"%s\", user_input) 固定格式"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 39,
+      "type": "system_call",
+      "severity": "HIGH",
+      "description": "使用 system() 执行命令，存在命令注入风险",
+      "code": "system(cmd);",
+      "category": "code",
+      "suggestion": "使用 execve() 等 exec 族函数，避免 shell 解释"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 51,
+      "type": "multiple_free_in_scope",
+      "severity": "LOW",
+      "description": "检测到 free 调用，需检查是否存在双重释放风险",
+      "code": "free(ptr);",
+      "category": "code",
+      "suggestion": "确保每个指针只被释放一次，建议释放后置为 NULL: ptr = NULL;"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 59,
+      "type": "multiple_free_in_scope",
+      "severity": "LOW",
+      "description": "检测到 free 调用，需检查是否存在双重释放风险",
+      "code": "free(ptr);",
+      "category": "code",
+      "suggestion": "确保每个指针只被释放一次，建议释放后置为 NULL: ptr = NULL;"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 51,
+      "type": "pointer_assignment_after_free_risk",
+      "severity": "LOW",
+      "description": "内存释放操作，需检查后续是否存在释放后使用风险",
+      "code": "free(ptr);",
+      "category": "code",
+      "suggestion": "释放后立即将指针置为 NULL，避免释放后使用"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 59,
+      "type": "pointer_assignment_after_free_risk",
+      "severity": "LOW",
+      "description": "内存释放操作，需检查后续是否存在释放后使用风险",
+      "code": "free(ptr);",
+      "category": "code",
+      "suggestion": "释放后立即将指针置为 NULL，避免释放后使用"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 64,
+      "type": "potential_memory_leak",
+      "severity": "MEDIUM",
+      "description": "指针被覆盖为零，可能导致内存泄漏",
+      "code": "int shared_counter = 0;",
+      "category": "code",
+      "suggestion": "在覆盖指针前确保已释放内存: free(ptr); ptr = NULL;"
+    }
+  ],
+  "ai_regions": [
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 46,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "char *ptr = malloc(100);",
+      "context": "    // HIGH: system 调用\n    sprintf(cmd, \"ping -c 1 %s\", hostname);\n    system(cmd);\n}\n\n// 内存管理问题 - 需要 Level 2 AI 检查\nvoid *global_ptr = NULL;\n\nvoid memory_issues() {\n    char *ptr = malloc(100);\n    // 未检查 malloc 返回值\n\n    // 可能的双重释放（需要 AI 分析控制流）\n    if (some_condition()) {\n        free(ptr);\n    }\n\n    // use-after-free 风险（需要 AI 分析）\n    if (another_condition()) {\n        strcpy(ptr, \"data\");  // 可能已释放",
+      "context_lines": "37-56"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 51,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "free(ptr);",
+      "context": "// 内存管理问题 - 需要 Level 2 AI 检查\nvoid *global_ptr = NULL;\n\nvoid memory_issues() {\n    char *ptr = malloc(100);\n    // 未检查 malloc 返回值\n\n    // 可能的双重释放（需要 AI 分析控制流）\n    if (some_condition()) {\n        free(ptr);\n    }\n\n    // use-after-free 风险（需要 AI 分析）\n    if (another_condition()) {\n        strcpy(ptr, \"data\");  // 可能已释放\n    }\n\n    free(ptr);\n}\n",
+      "context_lines": "42-61"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 59,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "free(ptr);",
+      "context": "    if (some_condition()) {\n        free(ptr);\n    }\n\n    // use-after-free 风险（需要 AI 分析）\n    if (another_condition()) {\n        strcpy(ptr, \"data\");  // 可能已释放\n    }\n\n    free(ptr);\n}\n\n// 并发问题 - 需要 Level 2 AI 检查\npthread_mutex_t mutex;\nint shared_counter = 0;\n\nvoid *thread_func(void *arg) {\n    // 复杂的锁使用模式，需要 AI 分析是否有死锁\n    pthread_mutex_lock(&mutex);\n    shared_counter++;",
+      "context_lines": "50-69"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 7,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "char *API_KEY = \"sk-1234567890abcdef\";",
+      "context": "#include <string.h>\n#include <pthread.h>\n\n// 硬编码密钥 - 应该被 Level 1 检测到\nchar *API_KEY = \"sk-1234567890abcdef\";\nchar password[] = \"admin123\";\n\n// 危险函数使用示例\nvoid unsafe_string_ops() {\n    char buffer[100];",
+      "context_lines": "3-12"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 29,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "void format_string_vuln(char *user_input) {",
+      "context": "    sprintf(buffer, \"Result: %s\", input);\n}\n\n// 格式化字符串漏洞\nvoid format_string_vuln(char *user_input) {\n    // HIGH: 用户输入作为格式字符串\n    printf(user_input);\n}\n\n// 命令注入风险",
+      "context_lines": "25-34"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 35,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "void command_injection(char *hostname) {",
+      "context": "    printf(user_input);\n}\n\n// 命令注入风险\nvoid command_injection(char *hostname) {\n    char cmd[256];\n    // HIGH: system 调用\n    sprintf(cmd, \"ping -c 1 %s\", hostname);\n    system(cmd);\n}",
+      "context_lines": "31-40"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 43,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "void *global_ptr = NULL;",
+      "context": "    system(cmd);\n}\n\n// 内存管理问题 - 需要 Level 2 AI 检查\nvoid *global_ptr = NULL;\n\nvoid memory_issues() {\n    char *ptr = malloc(100);\n    // 未检查 malloc 返回值\n",
+      "context_lines": "39-48"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 46,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "char *ptr = malloc(100);",
+      "context": "// 内存管理问题 - 需要 Level 2 AI 检查\nvoid *global_ptr = NULL;\n\nvoid memory_issues() {\n    char *ptr = malloc(100);\n    // 未检查 malloc 返回值\n\n    // 可能的双重释放（需要 AI 分析控制流）\n    if (some_condition()) {\n        free(ptr);",
+      "context_lines": "42-51"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 66,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "void *thread_func(void *arg) {",
+      "context": "// 并发问题 - 需要 Level 2 AI 检查\npthread_mutex_t mutex;\nint shared_counter = 0;\n\nvoid *thread_func(void *arg) {\n    // 复杂的锁使用模式，需要 AI 分析是否有死锁\n    pthread_mutex_lock(&mutex);\n    shared_counter++;\n\n    // 可能调用其他函数，需要检查锁传递",
+      "context_lines": "62-71"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 79,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "void file_race_condition(char *filename) {",
+      "context": "    return NULL;\n}\n\n// TOCTOU 风险 - 需要 Level 2 AI 检查\nvoid file_race_condition(char *filename) {\n    // 检查文件存在\n    if (access(filename, F_OK) == 0) {\n        // TOCTOU: 检查时和使用时之间可能被替换\n        FILE *fp = fopen(filename, \"r\");\n        if (fp) {",
+      "context_lines": "75-84"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 83,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "FILE *fp = fopen(filename, \"r\");",
+      "context": "void file_race_condition(char *filename) {\n    // 检查文件存在\n    if (access(filename, F_OK) == 0) {\n        // TOCTOU: 检查时和使用时之间可能被替换\n        FILE *fp = fopen(filename, \"r\");\n        if (fp) {\n            // 读取文件\n            fclose(fp);\n        }\n    }",
+      "context_lines": "79-88"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 103,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "int main(int argc, char *argv[]) {",
+      "context": "int some_condition() { return 0; }\nint another_condition() { return 0; }\nvoid some_other_function() {}\n\nint main(int argc, char *argv[]) {\n    unsafe_string_ops();\n    format_string_vuln(argv[1]);\n    command_injection(argv[2]);\n    memory_issues();\n",
+      "context_lines": "99-108"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 63,
+      "type": "thread_operations",
+      "description": "并发操作区域（需要 AI 检查 race condition, deadlock）",
+      "code": "pthread_mutex_t mutex;",
+      "context": "    // 可能的双重释放（需要 AI 分析控制流）\n    if (some_condition()) {\n        free(ptr);\n    }\n\n    // use-after-free 风险（需要 AI 分析）\n    if (another_condition()) {\n        strcpy(ptr, \"data\");  // 可能已释放\n    }\n\n    free(ptr);\n}\n\n// 并发问题 - 需要 Level 2 AI 检查\npthread_mutex_t mutex;\nint shared_counter = 0;\n\nvoid *thread_func(void *arg) {\n    // 复杂的锁使用模式，需要 AI 分析是否有死锁\n    pthread_mutex_lock(&mutex);\n    shared_counter++;\n\n    // 可能调用其他函数，需要检查锁传递\n    some_other_function();\n\n    pthread_mutex_unlock(&mutex);\n    return NULL;\n}\n\n// TOCTOU 风险 - 需要 Level 2 AI 检查",
+      "context_lines": "49-78"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 68,
+      "type": "thread_operations",
+      "description": "并发操作区域（需要 AI 检查 race condition, deadlock）",
+      "code": "pthread_mutex_lock(&mutex);",
+      "context": "    // use-after-free 风险（需要 AI 分析）\n    if (another_condition()) {\n        strcpy(ptr, \"data\");  // 可能已释放\n    }\n\n    free(ptr);\n}\n\n// 并发问题 - 需要 Level 2 AI 检查\npthread_mutex_t mutex;\nint shared_counter = 0;\n\nvoid *thread_func(void *arg) {\n    // 复杂的锁使用模式，需要 AI 分析是否有死锁\n    pthread_mutex_lock(&mutex);\n    shared_counter++;\n\n    // 可能调用其他函数，需要检查锁传递\n    some_other_function();\n\n    pthread_mutex_unlock(&mutex);\n    return NULL;\n}\n\n// TOCTOU 风险 - 需要 Level 2 AI 检查\nvoid file_race_condition(char *filename) {\n    // 检查文件存在\n    if (access(filename, F_OK) == 0) {\n        // TOCTOU: 检查时和使用时之间可能被替换\n        FILE *fp = fopen(filename, \"r\");",
+      "context_lines": "54-83"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 74,
+      "type": "thread_operations",
+      "description": "并发操作区域（需要 AI 检查 race condition, deadlock）",
+      "code": "pthread_mutex_unlock(&mutex);",
+      "context": "}\n\n// 并发问题 - 需要 Level 2 AI 检查\npthread_mutex_t mutex;\nint shared_counter = 0;\n\nvoid *thread_func(void *arg) {\n    // 复杂的锁使用模式，需要 AI 分析是否有死锁\n    pthread_mutex_lock(&mutex);\n    shared_counter++;\n\n    // 可能调用其他函数，需要检查锁传递\n    some_other_function();\n\n    pthread_mutex_unlock(&mutex);\n    return NULL;\n}\n\n// TOCTOU 风险 - 需要 Level 2 AI 检查\nvoid file_race_condition(char *filename) {\n    // 检查文件存在\n    if (access(filename, F_OK) == 0) {\n        // TOCTOU: 检查时和使用时之间可能被替换\n        FILE *fp = fopen(filename, \"r\");\n        if (fp) {\n            // 读取文件\n            fclose(fp);\n        }\n    }\n}",
+      "context_lines": "60-89"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 109,
+      "type": "thread_operations",
+      "description": "并发操作区域（需要 AI 检查 race condition, deadlock）",
+      "code": "pthread_t thread;",
+      "context": "    scanf(\"%s\", buf);\n}\n\n// 辅助函数占位符\nint some_condition() { return 0; }\nint another_condition() { return 0; }\nvoid some_other_function() {}\n\nint main(int argc, char *argv[]) {\n    unsafe_string_ops();\n    format_string_vuln(argv[1]);\n    command_injection(argv[2]);\n    memory_issues();\n\n    pthread_t thread;\n    pthread_create(&thread, NULL, thread_func, NULL);\n    pthread_join(thread, NULL);\n\n    return 0;\n}\n",
+      "context_lines": "95-115"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 110,
+      "type": "thread_operations",
+      "description": "并发操作区域（需要 AI 检查 race condition, deadlock）",
+      "code": "pthread_create(&thread, NULL, thread_func, NULL);",
+      "context": "}\n\n// 辅助函数占位符\nint some_condition() { return 0; }\nint another_condition() { return 0; }\nvoid some_other_function() {}\n\nint main(int argc, char *argv[]) {\n    unsafe_string_ops();\n    format_string_vuln(argv[1]);\n    command_injection(argv[2]);\n    memory_issues();\n\n    pthread_t thread;\n    pthread_create(&thread, NULL, thread_func, NULL);\n    pthread_join(thread, NULL);\n\n    return 0;\n}\n",
+      "context_lines": "96-115"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 111,
+      "type": "thread_operations",
+      "description": "并发操作区域（需要 AI 检查 race condition, deadlock）",
+      "code": "pthread_join(thread, NULL);",
+      "context": "\n// 辅助函数占位符\nint some_condition() { return 0; }\nint another_condition() { return 0; }\nvoid some_other_function() {}\n\nint main(int argc, char *argv[]) {\n    unsafe_string_ops();\n    format_string_vuln(argv[1]);\n    command_injection(argv[2]);\n    memory_issues();\n\n    pthread_t thread;\n    pthread_create(&thread, NULL, thread_func, NULL);\n    pthread_join(thread, NULL);\n\n    return 0;\n}\n",
+      "context_lines": "97-115"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_vulnerable.c",
+      "line": 83,
+      "type": "file_operations",
+      "description": "文件操作区域（需要 AI 检查 TOCTOU）",
+      "code": "FILE *fp = fopen(filename, \"r\");",
+      "context": "}\n\n// TOCTOU 风险 - 需要 Level 2 AI 检查\nvoid file_race_condition(char *filename) {\n    // 检查文件存在\n    if (access(filename, F_OK) == 0) {\n        // TOCTOU: 检查时和使用时之间可能被替换\n        FILE *fp = fopen(filename, \"r\");\n        if (fp) {\n            // 读取文件\n            fclose(fp);\n        }\n    }\n}\n\n// 未检查输入",
+      "context_lines": "76-91"
+    }
+  ],
+  "total_findings": 15,
+  "ai_check_count": 19
+}

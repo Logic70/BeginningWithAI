@@ -93,3 +93,30 @@ The user is a network security engineer learning AI development. Documentation i
 - Security domain applications (vulnerability scanning, security Q&A)
 - Practical hands-on experiments over theory
 - Progressive complexity: API calls → Fine-tuning → Agent development
+
+## 回答质量约束
+
+基于实际交互经验，建立以下约束以确保回答质量：
+
+### 概念层次区分
+- **Claude Code Skill**（提示词模板 + 工作流指令）与 **LangChain Tool / MCP / Function Calling**（可执行函数）是不同层次的概念
+- Skill 的本质是"教 AI 怎么做事"，Tool/MCP 的本质是"给 Agent 调用的代码"
+- 两者不应混淆，Skill 学习不应混入 Function Calling/MCP 的实现内容
+
+### 文档结构规范
+- 章节编号要逻辑连贯，避免跳步（如步骤 2 后直接跳到步骤 5）
+- 实现细节的子目录要与前文示例对应
+- 引用前文工具时要确保前文已介绍过该工具
+
+### 实现一致性
+- 实现方案要与项目已有方法保持一致
+- 不要脱离项目上下文自创方法（如 LLM 来源判断逻辑应与既有代码一致）
+
+### 代码验证要求
+- 提供的代码必须经过实际验证，确保能正常运行
+- 按步骤执行命令时如遇报错必须修复
+- 实现要与当前项目结构相符（如路径扫描应从项目根目录开始，而非从子目录）
+
+### 验证完整性
+- 验证要执行到底，不能只验证一半
+- 非实验关注重点的问题不需要记录，但验证时要给出明确结论

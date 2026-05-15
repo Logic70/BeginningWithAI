@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "security-tools": {
+      "command": "python",
+      "args": [
+        "D:\\Code\\BeginningWithAI\\experiments\\phase3\\exp3_4_mcp_server.py"
+      ]
+    }
+  }
+}

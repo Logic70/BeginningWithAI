@@ -1,0 +1,17 @@
+# AI 学习项目依赖
+# Python 3.10+ 推荐
+
+# OpenAI API 客户端
+openai>=1.0.0
+
+# 环境变量管理
+python-dotenv>=1.0.0
+
+# LangChain 核心
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-openai>=0.1.0
+langchain-ollama>=0.1.0
+
+# LangGraph（Agent 编排）
+langgraph>=0.1.0

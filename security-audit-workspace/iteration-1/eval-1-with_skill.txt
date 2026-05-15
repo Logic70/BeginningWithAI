@@ -1,0 +1,184 @@
+正在扫描 C 代码: .claude\skills\security-audit\scripts\test_vulnerable.c (mode: code)...
+# C 语言安全审计报告
+
+**目标**: `.claude\skills\security-audit\scripts\test_vulnerable.c`
+**模式**: code
+**扫描文件**: 1 个
+**Level 1 问题**: 9 个
+**Level 2 待检区域**: 19 个
+
+## Level 1 代码检查结果
+
+### dangerous_gets (CRITICAL)
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:16`
+- **描述**: gets 函数无法限制输入长度，极度危险
+- **代码**: `gets(input);`
+- **建议**: 使用 fgets(buf, sizeof(buf), stdin) 替代
+
+### dangerous_strcpy (HIGH)
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:19`
+- **描述**: 使用 strcpy 可能导致缓冲区溢出
+- **代码**: `strcpy(buffer, input);`
+- **建议**: 使用 strncpy(dest, src, sizeof(dest)-1) 并确保终止符
+
+### dangerous_strcpy (HIGH)
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:56`
+- **描述**: 使用 strcpy 可能导致缓冲区溢出
+- **代码**: `strcpy(ptr, "data");  // 可能已释放`
+- **建议**: 使用 strncpy(dest, src, sizeof(dest)-1) 并确保终止符
+
+### dangerous_strcat (HIGH)
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:22`
+- **描述**: 使用 strcat 可能导致缓冲区溢出
+- **代码**: `strcat(buffer, " suffix");`
+- **建议**: 使用 strncat(dest, src, sizeof(dest)-strlen(dest)-1)
+
+### dangerous_sprintf (HIGH)
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:25`
+- **描述**: 使用 sprintf 可能导致缓冲区溢出
+- **代码**: `sprintf(buffer, "Result: %s", input);`
+- **建议**: 使用 snprintf(buf, sizeof(buf), fmt, ...)
+
+### dangerous_sprintf (HIGH)
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:38`
+- **描述**: 使用 sprintf 可能导致缓冲区溢出
+- **代码**: `sprintf(cmd, "ping -c 1 %s", hostname);`
+- **建议**: 使用 snprintf(buf, sizeof(buf), fmt, ...)
+
+### dangerous_scanf (HIGH)
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:95`
+- **描述**: scanf %s 无长度限制，可能导致溢出
+- **代码**: `scanf("%s", buf);`
+- **建议**: 使用 scanf("%255s", buf) 指定最大长度
+
+### system_call (HIGH)
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:39`
+- **描述**: 使用 system() 执行命令，存在命令注入风险
+- **代码**: `system(cmd);`
+- **建议**: 使用 execve() 等 exec 族函数，避免 shell 解释
+
+### unchecked_malloc (MEDIUM)
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:46`
+- **描述**: 内存分配结果未检查
+- **代码**: `char *ptr = malloc(100);`
+- **建议**: 检查返回值: if ((ptr = malloc(size)) == NULL) { handle_error(); }
+
+## Level 2 AI 检查建议区域
+
+以下区域需要 AI 进行深度上下文分析：
+
+### memory_management
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:46`
+- **说明**: 内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）
+- **代码**: `char *ptr = malloc(100);`
+
+### memory_management
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:51`
+- **说明**: 内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）
+- **代码**: `free(ptr);`
+
+### memory_management
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:59`
+- **说明**: 内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）
+- **代码**: `free(ptr);`
+
+### pointer_usage
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:7`
+- **说明**: 指针解引用区域（需要 AI 检查空指针、野指针）
+- **代码**: `char *API_KEY = "sk-1234567890abcdef";`
+
+### pointer_usage
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:29`
+- **说明**: 指针解引用区域（需要 AI 检查空指针、野指针）
+- **代码**: `void format_string_vuln(char *user_input) {`
+
+### pointer_usage
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:35`
+- **说明**: 指针解引用区域（需要 AI 检查空指针、野指针）
+- **代码**: `void command_injection(char *hostname) {`
+
+### pointer_usage
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:43`
+- **说明**: 指针解引用区域（需要 AI 检查空指针、野指针）
+- **代码**: `void *global_ptr = NULL;`
+
+### pointer_usage
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:46`
+- **说明**: 指针解引用区域（需要 AI 检查空指针、野指针）
+- **代码**: `char *ptr = malloc(100);`
+
+### pointer_usage
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:66`
+- **说明**: 指针解引用区域（需要 AI 检查空指针、野指针）
+- **代码**: `void *thread_func(void *arg) {`
+
+### pointer_usage
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:79`
+- **说明**: 指针解引用区域（需要 AI 检查空指针、野指针）
+- **代码**: `void file_race_condition(char *filename) {`
+
+### pointer_usage
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:83`
+- **说明**: 指针解引用区域（需要 AI 检查空指针、野指针）
+- **代码**: `FILE *fp = fopen(filename, "r");`
+
+### pointer_usage
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:103`
+- **说明**: 指针解引用区域（需要 AI 检查空指针、野指针）
+- **代码**: `int main(int argc, char *argv[]) {`
+
+### thread_operations
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:63`
+- **说明**: 并发操作区域（需要 AI 检查 race condition, deadlock）
+- **代码**: `pthread_mutex_t mutex;`
+
+### thread_operations
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:68`
+- **说明**: 并发操作区域（需要 AI 检查 race condition, deadlock）
+- **代码**: `pthread_mutex_lock(&mutex);`
+
+### thread_operations
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:74`
+- **说明**: 并发操作区域（需要 AI 检查 race condition, deadlock）
+- **代码**: `pthread_mutex_unlock(&mutex);`
+
+### thread_operations
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:109`
+- **说明**: 并发操作区域（需要 AI 检查 race condition, deadlock）
+- **代码**: `pthread_t thread;`
+
+### thread_operations
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:110`
+- **说明**: 并发操作区域（需要 AI 检查 race condition, deadlock）
+- **代码**: `pthread_create(&thread, NULL, thread_func, NULL);`
+
+### thread_operations
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:111`
+- **说明**: 并发操作区域（需要 AI 检查 race condition, deadlock）
+- **代码**: `pthread_join(thread, NULL);`
+
+### file_operations
+- **文件**: `.claude\skills\security-audit\scripts\test_vulnerable.c:83`
+- **说明**: 文件操作区域（需要 AI 检查 TOCTOU）
+- **代码**: `FILE *fp = fopen(filename, "r");`
+
+## 修复建议汇总
+
+### Level 1 快速修复
+
+| 原函数 | 安全替代 | 风险 |
+|--------|----------|------|
+| strcpy | strncpy | 缓冲区溢出 |
+| strcat | strncat | 缓冲区溢出 |
+| sprintf | snprintf | 缓冲区溢出 |
+| gets | fgets | 无限制输入 |
+| scanf | scanf with limit | 格式问题 |
+| system | execve | 命令注入 |
+
+### Level 2 检查要点
+
+- [ ] 检查所有 malloc/free 配对
+- [ ] 验证指针使用前的有效性
+- [ ] 确认并发代码的锁使用
+- [ ] 审查文件操作的 TOCTOU 风险
+

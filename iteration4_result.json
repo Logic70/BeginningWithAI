@@ -1,0 +1,415 @@
+正在扫描 C 代码: test_dvc\dvcp.c (mode: code)...
+{
+  "target": "test_dvc\\dvcp.c",
+  "mode": "code",
+  "files_scanned": 1,
+  "findings": [
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 55,
+      "type": "unchecked_malloc",
+      "severity": "MEDIUM",
+      "description": "内存分配结果未检查",
+      "code": "char* buff1=(char*)malloc(size1);",
+      "category": "code",
+      "suggestion": "检查返回值: if ((ptr = malloc(size)) == NULL) { handle_error(); }"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 76,
+      "type": "unchecked_malloc",
+      "severity": "MEDIUM",
+      "description": "内存分配结果未检查",
+      "code": "char* buff2=(char*)malloc(size2);",
+      "category": "code",
+      "suggestion": "检查返回值: if ((ptr = malloc(size)) == NULL) { handle_error(); }"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 86,
+      "type": "unchecked_malloc",
+      "severity": "MEDIUM",
+      "description": "内存分配结果未检查",
+      "code": "char* buff4 =(char*)malloc(size3);",
+      "category": "code",
+      "suggestion": "检查返回值: if ((ptr = malloc(size)) == NULL) { handle_error(); }"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 113,
+      "type": "unchecked_malloc",
+      "severity": "MEDIUM",
+      "description": "内存分配结果未检查",
+      "code": "buff5 = (char*)malloc(size4);",
+      "category": "code",
+      "suggestion": "检查返回值: if ((ptr = malloc(size)) == NULL) { handle_error(); }"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 54,
+      "type": "integer_overflow_in_assignment",
+      "severity": "LOW",
+      "description": "整数加法可能导致溢出",
+      "code": "int size1 = img.width + img.height;",
+      "category": "code",
+      "suggestion": "检查加法溢出: if (a > INT_MAX - b) { handle_error(); }"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 74,
+      "type": "integer_overflow_in_assignment",
+      "severity": "LOW",
+      "description": "整数加法可能导致溢出",
+      "code": "int size2 = img.width - img.height+100;",
+      "category": "code",
+      "suggestion": "检查加法溢出: if (a > INT_MAX - b) { handle_error(); }"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 74,
+      "type": "integer_underflow_in_assignment",
+      "severity": "LOW",
+      "description": "整数减法可能导致下溢",
+      "code": "int size2 = img.width - img.height+100;",
+      "category": "code",
+      "suggestion": "确保减法结果非负: if (a < b) { result = 0; } else { result = a - b; }"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 53,
+      "type": "divide_by_zero",
+      "severity": "MEDIUM",
+      "description": "除法操作未检查除数是否为零",
+      "code": "//will cause very large/small memory allocation.",
+      "category": "code",
+      "suggestion": "检查除数: if (divisor == 0) { handle_error(); }"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 82,
+      "type": "divide_by_zero",
+      "severity": "MEDIUM",
+      "description": "除法操作未检查除数是否为零",
+      "code": "int size3= img.width/img.height;",
+      "category": "code",
+      "suggestion": "检查除数: if (divisor == 0) { handle_error(); }"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 89,
+      "type": "divide_by_zero",
+      "severity": "MEDIUM",
+      "description": "除法操作未检查除数是否为零",
+      "code": "//OOBR read bytes past stack/heap buffer",
+      "category": "code",
+      "suggestion": "检查除数: if (divisor == 0) { handle_error(); }"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 93,
+      "type": "divide_by_zero",
+      "severity": "MEDIUM",
+      "description": "除法操作未检查除数是否为零",
+      "code": "//OOBW write bytes past stack/heap buffer",
+      "category": "code",
+      "suggestion": "检查除数: if (divisor == 0) { handle_error(); }"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 67,
+      "type": "unchecked_array_access",
+      "severity": "MEDIUM",
+      "description": "数组访问可能越界（无边界检查）",
+      "code": "buff1[0]='a';",
+      "category": "code",
+      "suggestion": "添加边界检查: if (index < sizeof(arr)/sizeof(arr[0]))"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 94,
+      "type": "unchecked_array_access",
+      "severity": "MEDIUM",
+      "description": "数组访问可能越界（无边界检查）",
+      "code": "buff3[size3]='c';",
+      "category": "code",
+      "suggestion": "添加边界检查: if (index < sizeof(arr)/sizeof(arr[0]))"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 95,
+      "type": "unchecked_array_access",
+      "severity": "MEDIUM",
+      "description": "数组访问可能越界（无边界检查）",
+      "code": "buff4[size3]='c';",
+      "category": "code",
+      "suggestion": "添加边界检查: if (index < sizeof(arr)/sizeof(arr[0]))"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 59,
+      "type": "multiple_free_in_scope",
+      "severity": "LOW",
+      "description": "检测到 free 调用，需检查是否存在双重释放风险",
+      "code": "free(buff1);",
+      "category": "code",
+      "suggestion": "确保每个指针只被释放一次，建议释放后置为 NULL: ptr = NULL;"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 62,
+      "type": "multiple_free_in_scope",
+      "severity": "LOW",
+      "description": "检测到 free 调用，需检查是否存在双重释放风险",
+      "code": "free(buff1);",
+      "category": "code",
+      "suggestion": "确保每个指针只被释放一次，建议释放后置为 NULL: ptr = NULL;"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 102,
+      "type": "multiple_free_in_scope",
+      "severity": "LOW",
+      "description": "检测到 free 调用，需检查是否存在双重释放风险",
+      "code": "free(buff4);",
+      "category": "code",
+      "suggestion": "确保每个指针只被释放一次，建议释放后置为 NULL: ptr = NULL;"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 116,
+      "type": "multiple_free_in_scope",
+      "severity": "LOW",
+      "description": "检测到 free 调用，需检查是否存在双重释放风险",
+      "code": "free(buff2);",
+      "category": "code",
+      "suggestion": "确保每个指针只被释放一次，建议释放后置为 NULL: ptr = NULL;"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 59,
+      "type": "pointer_assignment_after_free_risk",
+      "severity": "LOW",
+      "description": "内存释放操作，需检查后续是否存在释放后使用风险",
+      "code": "free(buff1);",
+      "category": "code",
+      "suggestion": "释放后立即将指针置为 NULL，避免释放后使用"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 62,
+      "type": "pointer_assignment_after_free_risk",
+      "severity": "LOW",
+      "description": "内存释放操作，需检查后续是否存在释放后使用风险",
+      "code": "free(buff1);",
+      "category": "code",
+      "suggestion": "释放后立即将指针置为 NULL，避免释放后使用"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 102,
+      "type": "pointer_assignment_after_free_risk",
+      "severity": "LOW",
+      "description": "内存释放操作，需检查后续是否存在释放后使用风险",
+      "code": "free(buff4);",
+      "category": "code",
+      "suggestion": "释放后立即将指针置为 NULL，避免释放后使用"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 116,
+      "type": "pointer_assignment_after_free_risk",
+      "severity": "LOW",
+      "description": "内存释放操作，需检查后续是否存在释放后使用风险",
+      "code": "free(buff2);",
+      "category": "code",
+      "suggestion": "释放后立即将指针置为 NULL，避免释放后使用"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 99,
+      "type": "potential_memory_leak",
+      "severity": "MEDIUM",
+      "description": "指针被覆盖为零，可能导致内存泄漏",
+      "code": "buff4=0;",
+      "category": "code",
+      "suggestion": "在覆盖指针前确保已释放内存: free(ptr); ptr = NULL;"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 24,
+      "type": "infinite_loop_risk",
+      "severity": "LOW",
+      "description": "无限循环 while(1) 可能导致拒绝服务",
+      "code": "while(1){",
+      "category": "code",
+      "suggestion": "确保循环内有退出条件: break、return 或 exit"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 25,
+      "type": "recursive_function_call",
+      "severity": "MEDIUM",
+      "description": "函数内部调用自身可能导致栈溢出",
+      "code": "stack_operation();",
+      "category": "code",
+      "suggestion": "添加递归深度限制或使用迭代替代"
+    }
+  ],
+  "ai_regions": [
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 55,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "char* buff1=(char*)malloc(size1);",
+      "context": "\t\t\tprintf(\"\\n\\tHeader\\twidth\\theight\\tdata\\t\\r\\n\");\n\n\t\t\tprintf(\"\\n\\t%s\\t%d\\t%d\\t%s\\r\\n\",img.header,img.width,img.height,img.data);\n\n\n\t\t\t//integer overflow 0x7FFFFFFF+1=0\n\t\t\t//0x7FFFFFFF+2 = 1\n\t\t\t//will cause very large/small memory allocation.\n\t\t\tint size1 = img.width + img.height;\n\t\t\tchar* buff1=(char*)malloc(size1);\n\n\t\t\t//heap buffer overflow\n\t\t\tmemcpy(buff1,img.data,sizeof(img.data));\n\t\t\tfree(buff1);\n\t\t\t//double free\t\n\t\t\tif (size1 % 2 == 0){\n\t\t\t\tfree(buff1);\n\t\t\t}\n\t\t\telse{\n\t\t\t\t//use after free",
+      "context_lines": "46-65"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 59,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "free(buff1);",
+      "context": "\n\t\t\t//integer overflow 0x7FFFFFFF+1=0\n\t\t\t//0x7FFFFFFF+2 = 1\n\t\t\t//will cause very large/small memory allocation.\n\t\t\tint size1 = img.width + img.height;\n\t\t\tchar* buff1=(char*)malloc(size1);\n\n\t\t\t//heap buffer overflow\n\t\t\tmemcpy(buff1,img.data,sizeof(img.data));\n\t\t\tfree(buff1);\n\t\t\t//double free\t\n\t\t\tif (size1 % 2 == 0){\n\t\t\t\tfree(buff1);\n\t\t\t}\n\t\t\telse{\n\t\t\t\t//use after free\n\t\t\t\tif(size1 % 3 == 0){\n\t\t\t\t\tbuff1[0]='a';\n\t\t\t\t}\n\t\t\t}",
+      "context_lines": "50-69"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 62,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "free(buff1);",
+      "context": "\t\t\t//will cause very large/small memory allocation.\n\t\t\tint size1 = img.width + img.height;\n\t\t\tchar* buff1=(char*)malloc(size1);\n\n\t\t\t//heap buffer overflow\n\t\t\tmemcpy(buff1,img.data,sizeof(img.data));\n\t\t\tfree(buff1);\n\t\t\t//double free\t\n\t\t\tif (size1 % 2 == 0){\n\t\t\t\tfree(buff1);\n\t\t\t}\n\t\t\telse{\n\t\t\t\t//use after free\n\t\t\t\tif(size1 % 3 == 0){\n\t\t\t\t\tbuff1[0]='a';\n\t\t\t\t}\n\t\t\t}\n\n\n\t\t\t//integer underflow 0-1=-1",
+      "context_lines": "53-72"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 76,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "char* buff2=(char*)malloc(size2);",
+      "context": "\t\t\t\t\tbuff1[0]='a';\n\t\t\t\t}\n\t\t\t}\n\n\n\t\t\t//integer underflow 0-1=-1\n\t\t\t//negative so will cause very large memory allocation\n\t\t\tint size2 = img.width - img.height+100;\n\t\t\t//printf(\"Size1:%d\",size1);\n\t\t\tchar* buff2=(char*)malloc(size2);\n\n\t\t\t//heap buffer overflow\n\t\t\tmemcpy(buff2,img.data,sizeof(img.data));\n\n\t\t\t//divide by zero\n\t\t\tint size3= img.width/img.height;\n\t\t\t//printf(\"Size2:%d\",size3);\n\n\t\t\tchar buff3[10];\n\t\t\tchar* buff4 =(char*)malloc(size3);",
+      "context_lines": "67-86"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 86,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "char* buff4 =(char*)malloc(size3);",
+      "context": "\n\t\t\t//heap buffer overflow\n\t\t\tmemcpy(buff2,img.data,sizeof(img.data));\n\n\t\t\t//divide by zero\n\t\t\tint size3= img.width/img.height;\n\t\t\t//printf(\"Size2:%d\",size3);\n\n\t\t\tchar buff3[10];\n\t\t\tchar* buff4 =(char*)malloc(size3);\n\t\t\tmemcpy(buff4,img.data,sizeof(img.data));\n\n\t\t\t//OOBR read bytes past stack/heap buffer\n\t\t\tchar OOBR = buff3[size3];\n\t\t\tchar OOBR_heap = buff4[size3];\n\n\t\t\t//OOBW write bytes past stack/heap buffer\n\t\t\tbuff3[size3]='c';\n\t\t\tbuff4[size3]='c';\n",
+      "context_lines": "77-96"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 102,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "free(buff4);",
+      "context": "\t\t\t//OOBW write bytes past stack/heap buffer\n\t\t\tbuff3[size3]='c';\n\t\t\tbuff4[size3]='c';\n\n\t\t\tif(size3>10){\n\t\t\t\t//memory leak here\n\t\t\t\tbuff4=0;\n\t\t\t}\n\t\t\telse{\n\t\t\t\tfree(buff4);\n\t\t\t}\n\t\t\tint size4 = img.width * img.height;\n\t\t\tif(size4 % 2 == 0){\n\t\t\t\t//stack exhaustion here\n\t\t\t\tstack_operation();\n\t\t\t}\n\t\t\telse{\n\t\t\t\t//heap exhaustion here\n\t\t\t\tchar *buff5;\n\t\t\t\tdo{",
+      "context_lines": "93-112"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 113,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "buff5 = (char*)malloc(size4);",
+      "context": "\t\t\tint size4 = img.width * img.height;\n\t\t\tif(size4 % 2 == 0){\n\t\t\t\t//stack exhaustion here\n\t\t\t\tstack_operation();\n\t\t\t}\n\t\t\telse{\n\t\t\t\t//heap exhaustion here\n\t\t\t\tchar *buff5;\n\t\t\t\tdo{\n\t\t\t\tbuff5 = (char*)malloc(size4);\n\t\t\t\t}while(buff5);\n\t\t\t}\n\t\t\tfree(buff2);\n\t\t//}\n\t\t//else\n\t\t//\tprintf(\"invalid header\\r\\n\");\n\n\t}\n\tfclose(fp);\n\treturn 0;",
+      "context_lines": "104-123"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 116,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "free(buff2);",
+      "context": "\t\t\t\tstack_operation();\n\t\t\t}\n\t\t\telse{\n\t\t\t\t//heap exhaustion here\n\t\t\t\tchar *buff5;\n\t\t\t\tdo{\n\t\t\t\tbuff5 = (char*)malloc(size4);\n\t\t\t\t}while(buff5);\n\t\t\t}\n\t\t\tfree(buff2);\n\t\t//}\n\t\t//else\n\t\t//\tprintf(\"invalid header\\r\\n\");\n\n\t}\n\tfclose(fp);\n\treturn 0;\n}\n\nint main(int argc,char **argv)",
+      "context_lines": "107-126"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 29,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "int ProcessImage(char* filename){",
+      "context": "\t\tstack_operation();\n\t}\n}\n\nint ProcessImage(char* filename){\n\tFILE *fp;\n\tstruct Image img;\n\n\tfp = fopen(filename,\"r\");            //Statement   1\n",
+      "context_lines": "25-34"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 30,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "FILE *fp;",
+      "context": "\t}\n}\n\nint ProcessImage(char* filename){\n\tFILE *fp;\n\tstruct Image img;\n\n\tfp = fopen(filename,\"r\");            //Statement   1\n\n\tif(fp == NULL)",
+      "context_lines": "26-35"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 55,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "char* buff1=(char*)malloc(size1);",
+      "context": "\t\t\t//integer overflow 0x7FFFFFFF+1=0\n\t\t\t//0x7FFFFFFF+2 = 1\n\t\t\t//will cause very large/small memory allocation.\n\t\t\tint size1 = img.width + img.height;\n\t\t\tchar* buff1=(char*)malloc(size1);\n\n\t\t\t//heap buffer overflow\n\t\t\tmemcpy(buff1,img.data,sizeof(img.data));\n\t\t\tfree(buff1);\n\t\t\t//double free\t",
+      "context_lines": "51-60"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 76,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "char* buff2=(char*)malloc(size2);",
+      "context": "\t\t\t//integer underflow 0-1=-1\n\t\t\t//negative so will cause very large memory allocation\n\t\t\tint size2 = img.width - img.height+100;\n\t\t\t//printf(\"Size1:%d\",size1);\n\t\t\tchar* buff2=(char*)malloc(size2);\n\n\t\t\t//heap buffer overflow\n\t\t\tmemcpy(buff2,img.data,sizeof(img.data));\n\n\t\t\t//divide by zero",
+      "context_lines": "72-81"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 86,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "char* buff4 =(char*)malloc(size3);",
+      "context": "\t\t\tint size3= img.width/img.height;\n\t\t\t//printf(\"Size2:%d\",size3);\n\n\t\t\tchar buff3[10];\n\t\t\tchar* buff4 =(char*)malloc(size3);\n\t\t\tmemcpy(buff4,img.data,sizeof(img.data));\n\n\t\t\t//OOBR read bytes past stack/heap buffer\n\t\t\tchar OOBR = buff3[size3];\n\t\t\tchar OOBR_heap = buff4[size3];",
+      "context_lines": "82-91"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 104,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "int size4 = img.width * img.height;",
+      "context": "\t\t\t}\n\t\t\telse{\n\t\t\t\tfree(buff4);\n\t\t\t}\n\t\t\tint size4 = img.width * img.height;\n\t\t\tif(size4 % 2 == 0){\n\t\t\t\t//stack exhaustion here\n\t\t\t\tstack_operation();\n\t\t\t}\n\t\t\telse{",
+      "context_lines": "100-109"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 111,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "char *buff5;",
+      "context": "\t\t\t\tstack_operation();\n\t\t\t}\n\t\t\telse{\n\t\t\t\t//heap exhaustion here\n\t\t\t\tchar *buff5;\n\t\t\t\tdo{\n\t\t\t\tbuff5 = (char*)malloc(size4);\n\t\t\t\t}while(buff5);\n\t\t\t}\n\t\t\tfree(buff2);",
+      "context_lines": "107-116"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 126,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "int main(int argc,char **argv)",
+      "context": "\tfclose(fp);\n\treturn 0;\n}\n\nint main(int argc,char **argv)\n{\n\tif (argc < 2) {\n    \t\tfprintf(stderr, \"no input file\\n\");\n    \t\texit(-1);\n  \t}",
+      "context_lines": "122-131"
+    },
+    {
+      "file": "test_dvc\\dvcp.c",
+      "line": 33,
+      "type": "file_operations",
+      "description": "文件操作区域（需要 AI 检查 TOCTOU）",
+      "code": "fp = fopen(filename,\"r\");            //Statement   1",
+      "context": "\t}\n}\n\nint ProcessImage(char* filename){\n\tFILE *fp;\n\tstruct Image img;\n\n\tfp = fopen(filename,\"r\");            //Statement   1\n\n\tif(fp == NULL)\n\t{\n\t\tprintf(\"\\nCan't open file or file doesn't exist.\\r\\n\");\n\t\texit(0);\n\t}\n\n",
+      "context_lines": "26-41"
+    }
+  ],
+  "total_findings": 25,
+  "ai_check_count": 17
+}

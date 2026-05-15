@@ -1,0 +1,90 @@
+app:
+  name: C Code Security Auditor
+  mode: workflow
+  description: C代码安全审计工作流
+
+workflow:
+  nodes:
+    - id: start
+      type: start
+      data:
+        title: 开始
+        variables:
+          - name: code_content
+            type: paragraph
+            required: true
+            description: 粘贴C代码内容
+
+    - id: pattern_scan
+      type: llm
+      data:
+        title: Level 1 - 模式扫描
+        model:
+          provider: openai
+          name: gpt-4
+        prompt: |
+          分析以下C代码的安全问题：
+          {{#start.code_content#}}
+
+          检查：strcpy, strcat, sprintf, gets, system等危险函数
+          输出JSON格式：{"findings": [{"severity": "...", "line": N, "description": "..."}]}
+
+    - id: security_analysis
+      type: llm
+      data:
+        title: Level 2 - 安全分析
+        model:
+          provider: openai
+          name: gpt-4
+        prompt: |
+          深度安全分析：
+          {{#start.code_content#}}
+
+          检查：命令注入、路径遍历、硬编码凭证、污点分析
+
+    - id: merge
+      type: code
+      data:
+        title: 合并结果
+        language: python3
+        code: |
+          import json
+          findings = []
+
+          # 解析模式扫描结果
+          p1 = '''{{#pattern_scan.text#}}'''
+          p2 = '''{{#security_analysis.text#}}'''
+
+          output = {
+            "pattern_result": p1[:1000],
+            "security_result": p2[:1000],
+            "summary": "分析完成"
+          }
+          print(json.dumps(output, ensure_ascii=False))
+
+    - id: report
+      type: llm
+      data:
+        title: 生成报告
+        model:
+          provider: openai
+          name: gpt-4
+        prompt: |
+          基于以下结果生成安全审计报告：
+          {{#merge.result#}}
+
+          格式：
+          ## C代码安全审计报告
+          ### 发现问题
+          [列出问题]
+          ### 修复建议
+          [给出建议]
+
+    - id: end
+      type: end
+      data:
+        title: 结束
+        outputs:
+          - name: report
+            type: string
+            value: "{{#report.text#}}"

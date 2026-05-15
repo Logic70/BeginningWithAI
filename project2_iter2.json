@@ -1,0 +1,247 @@
+正在扫描 C 代码: .claude\skills\security-audit\scripts\test_advanced.c (mode: code)...
+{
+  "target": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+  "mode": "code",
+  "files_scanned": 1,
+  "findings": [
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 50,
+      "type": "dangerous_strcpy",
+      "severity": "HIGH",
+      "description": "使用 strcpy 可能导致缓冲区溢出",
+      "code": "strcpy(buf, \"test\");  // HIGH",
+      "category": "code",
+      "suggestion": "使用 strncpy(dest, src, sizeof(dest)-1) 并确保终止符"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 51,
+      "type": "dangerous_sprintf",
+      "severity": "HIGH",
+      "description": "使用 sprintf 可能导致缓冲区溢出",
+      "code": "sprintf(buf, \"%s\", \"test\");  // HIGH",
+      "category": "code",
+      "suggestion": "使用 snprintf(buf, sizeof(buf), fmt, ...)"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 49,
+      "type": "dangerous_gets",
+      "severity": "CRITICAL",
+      "description": "gets 函数无法限制输入长度，极度危险",
+      "code": "gets(buf);  // CRITICAL",
+      "category": "code",
+      "suggestion": "使用 fgets(buf, sizeof(buf), stdin) 替代"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 9,
+      "type": "unchecked_malloc",
+      "severity": "MEDIUM",
+      "description": "内存分配结果未检查",
+      "code": "void *ptr = malloc(nmemb * size);",
+      "category": "code",
+      "suggestion": "检查返回值: if ((ptr = malloc(size)) == NULL) { handle_error(); }"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 56,
+      "type": "format_string_vuln",
+      "severity": "HIGH",
+      "description": "格式化字符串可能包含用户输入",
+      "code": "printf(user_input);  // HIGH: 用户控制格式字符串",
+      "category": "code",
+      "suggestion": "使用 printf(\"%s\", user_input) 固定格式"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 9,
+      "type": "unchecked_multiplication",
+      "severity": "MEDIUM",
+      "description": "malloc 中使用乘法可能导致整数溢出",
+      "code": "void *ptr = malloc(nmemb * size);",
+      "category": "code",
+      "suggestion": "检查乘法溢出: if (nmemb && size > SIZE_MAX / nmemb) { handle_error(); }"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 15,
+      "type": "implicit_conversion",
+      "severity": "MEDIUM",
+      "description": "无符号类型赋负值导致大正数",
+      "code": "size_t len = -1;  // 危险：size_t 赋负值",
+      "category": "code",
+      "suggestion": "检查赋值范围，避免无符号/有符号混用"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 13,
+      "type": "divide_by_zero",
+      "severity": "MEDIUM",
+      "description": "除法操作未检查除数是否为零",
+      "code": "// 无符号/有符号混用",
+      "category": "code",
+      "suggestion": "检查除数: if (divisor == 0) { handle_error(); }"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 28,
+      "type": "uninitialized_variable",
+      "severity": "LOW",
+      "description": "变量声明后未初始化",
+      "code": "int x;",
+      "category": "code",
+      "suggestion": "声明时初始化: int x = 0;"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 22,
+      "type": "unchecked_array_access",
+      "severity": "MEDIUM",
+      "description": "数组访问可能越界（无边界检查）",
+      "code": "char local[100] = \"local data\";",
+      "category": "code",
+      "suggestion": "添加边界检查: if (index < sizeof(arr)/sizeof(arr[0]))"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 36,
+      "type": "unchecked_array_access",
+      "severity": "MEDIUM",
+      "description": "数组访问可能越界（无边界检查）",
+      "code": "arr[index] = 100;  // 危险：越界写入",
+      "category": "code",
+      "suggestion": "添加边界检查: if (index < sizeof(arr)/sizeof(arr[0]))"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 17,
+      "type": "strncpy_without_null",
+      "severity": "MEDIUM",
+      "description": "strncpy 可能不添加终止符",
+      "code": "strncpy(buf, \"test\", len);  // 会复制大量数据",
+      "category": "code",
+      "suggestion": "手动添加终止符: dest[n-1] = '\\0';"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 42,
+      "type": "strncpy_without_null",
+      "severity": "MEDIUM",
+      "description": "strncpy 可能不添加终止符",
+      "code": "strncpy(dest, \"hello world\", 10);  // dest[9] 可能不是 '\\0'",
+      "category": "code",
+      "suggestion": "手动添加终止符: dest[n-1] = '\\0';"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 61,
+      "type": "recursive_function_call",
+      "severity": "MEDIUM",
+      "description": "函数内部调用自身可能导致栈溢出",
+      "code": "unsigned_signed_issue();",
+      "category": "code",
+      "suggestion": "添加递归深度限制或使用迭代替代"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 63,
+      "type": "recursive_function_call",
+      "severity": "MEDIUM",
+      "description": "函数内部调用自身可能导致栈溢出",
+      "code": "uninitialized_use();",
+      "category": "code",
+      "suggestion": "添加递归深度限制或使用迭代替代"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 64,
+      "type": "recursive_function_call",
+      "severity": "MEDIUM",
+      "description": "函数内部调用自身可能导致栈溢出",
+      "code": "unchecked_array_access();",
+      "category": "code",
+      "suggestion": "添加递归深度限制或使用迭代替代"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 65,
+      "type": "recursive_function_call",
+      "severity": "MEDIUM",
+      "description": "函数内部调用自身可能导致栈溢出",
+      "code": "strncpy_without_null();",
+      "category": "code",
+      "suggestion": "添加递归深度限制或使用迭代替代"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 66,
+      "type": "recursive_function_call",
+      "severity": "MEDIUM",
+      "description": "函数内部调用自身可能导致栈溢出",
+      "code": "dangerous_combo();",
+      "category": "code",
+      "suggestion": "添加递归深度限制或使用迭代替代"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 67,
+      "type": "recursive_function_call",
+      "severity": "MEDIUM",
+      "description": "函数内部调用自身可能导致栈溢出",
+      "code": "format_vuln(\"%s%s%s%s%s%s%s%s\");",
+      "category": "code",
+      "suggestion": "添加递归深度限制或使用迭代替代"
+    }
+  ],
+  "ai_regions": [
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 9,
+      "type": "memory_management",
+      "description": "内存管理区域（需要 AI 检查 use-after-free, double-free, memory leak）",
+      "code": "void *ptr = malloc(nmemb * size);",
+      "context": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdint.h>\n\n// 整数溢出测试\nvoid* integer_overflow(size_t nmemb, size_t size) {\n    // 危险：乘法可能溢出\n    void *ptr = malloc(nmemb * size);\n    return ptr;\n}\n\n// 无符号/有符号混用\nvoid unsigned_signed_issue() {\n    size_t len = -1;  // 危险：size_t 赋负值\n    char buf[100];\n    strncpy(buf, \"test\", len);  // 会复制大量数据\n}\n",
+      "context_lines": "1-19"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 7,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "void* integer_overflow(size_t nmemb, size_t size) {",
+      "context": "#include <string.h>\n#include <stdint.h>\n\n// 整数溢出测试\nvoid* integer_overflow(size_t nmemb, size_t size) {\n    // 危险：乘法可能溢出\n    void *ptr = malloc(nmemb * size);\n    return ptr;\n}\n",
+      "context_lines": "3-12"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 9,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "void *ptr = malloc(nmemb * size);",
+      "context": "\n// 整数溢出测试\nvoid* integer_overflow(size_t nmemb, size_t size) {\n    // 危险：乘法可能溢出\n    void *ptr = malloc(nmemb * size);\n    return ptr;\n}\n\n// 无符号/有符号混用\nvoid unsigned_signed_issue() {",
+      "context_lines": "5-14"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 21,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "char* dangling_pointer() {",
+      "context": "    strncpy(buf, \"test\", len);  // 会复制大量数据\n}\n\n// 返回局部变量地址\nchar* dangling_pointer() {\n    char local[100] = \"local data\";\n    return local;  // 危险：返回局部变量地址\n}\n\n// 未初始化变量",
+      "context_lines": "17-26"
+    },
+    {
+      "file": ".claude\\skills\\security-audit\\scripts\\test_advanced.c",
+      "line": 55,
+      "type": "pointer_usage",
+      "description": "指针解引用区域（需要 AI 检查空指针、野指针）",
+      "code": "void format_vuln(char *user_input) {",
+      "context": "    sprintf(buf, \"%s\", \"test\");  // HIGH\n}\n\n// 格式化字符串\nvoid format_vuln(char *user_input) {\n    printf(user_input);  // HIGH: 用户控制格式字符串\n}\n\nint main() {\n    integer_overflow(1000000, 1000000);",
+      "context_lines": "51-60"
+    }
+  ],
+  "total_findings": 19,
+  "ai_check_count": 5
+}
