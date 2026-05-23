@@ -15,6 +15,7 @@
 | LangChain 实践 | 理解原生实现后，用 LangChain 掌握最佳实践 | 阶段一/三 |
 | 模型微调 | 能够针对特定领域进行 LoRA 微调 | 阶段二 |
 | Agent 开发 | 能够开发 Agent、MCP Server、Skill | 阶段三 |
+| Code Agent Runtime | 掌握 Subagent、Agent Team、Hook、权限、上下文和记忆机制 | 阶段三专项 |
 | 工作流编排 | 使用 Dify 平台可视化编排 Agent 工作流 | 阶段三 |
 | 多 Agent 协作 | 掌握 A2A 协议实现 Agent 间通信与协作 | 阶段三 |
 
@@ -105,6 +106,10 @@
 
 ### 📎 实验指导
 详见 [阶段三实验指导](phase3_agent.md)
+
+专项课程：
+
+- [Claude Code 风格 Code Agent Runtime 课程设计](claude_code_agent_runtime_course.md)
 
 ---
 

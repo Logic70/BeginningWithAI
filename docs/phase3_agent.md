@@ -18,6 +18,14 @@
 
 ---
 
+## 📘 专项课程
+
+- [Claude Code 风格 Code Agent Runtime 课程设计](D:/Code/BeginningWithAI/docs/claude_code_agent_runtime_course.md)
+
+这门专项课程补齐现代 code agent 的核心运行时能力：Subagent、Coordinator / Worker、Agent Team、Hook、Instruction / Permission、Context / Memory。它是 3.11 多 Agent 章节的深化，不替代 Function Calling、MCP、Skill 和 LangGraph 的基础实验。
+
+---
+
 ## 🧭 如何使用本章
 
 - 本章正文继续保留原实验编号，便于与你现有代码文件一一对应。
@@ -60,6 +68,7 @@
 **推荐先读 / 先跑**：
 - 实验 3.2：Prompt 核心价值与 LCEL
 - 实验 3.3：ReAct Agent 实现
+- 专题 3.3x：Reasoning Trace、思维链与 ReAct Scratchpad
 - 实验 3.2b：最小 Guarded Single Agent（任务契约 + 结果校验 + 修复重试）
 - 实验 3.8：Skills Agent 实现
 - 实验 3.9：高级 Skill 编写（Security Audit）
@@ -81,6 +90,12 @@
 
 **推荐先读 / 先跑**：
 - 实验 3.11：多 Agent 编排模式
+- 实验 3.11c：OpenAI SDK 版主 Agent + Subagent Runtime
+- 实验 3.11d：OpenAI SDK 版 Coordinator / Worker Runtime
+- 实验 3.11e：OpenAI SDK 版 Agent Team Runtime
+- 实验 3.11f：OpenAI SDK 版 Hook Control Plane Runtime
+- 实验 3.11g：OpenAI SDK 版 Instruction / Permission Runtime
+- 实验 3.11h：OpenAI SDK 版 Context / Memory Runtime
 - 实验 3.13：生产化实践（重点读评估与可观测性）
 
 **阶段产出**：
@@ -129,6 +144,305 @@
 - 不把“软编排”和“权限 / hook / sandbox”等控制面混为一谈
 - 每个实验都要写清楚：输入是什么、能调用什么、输出必须长什么样、怎样算完成
 - 每个阶段至少产出一份能运行的代码和一份结构理解说明
+
+---
+
+## 🧭 Claude Code 核心能力补充学习线
+
+本节补充的是“现代 code agent 的核心能力层”，资料来源分成两类：
+
+- **官方功能边界**：以 Claude Code 官方文档为准，包括 Subagents、Agent Teams、Hooks、Memory、Settings / Permissions、Skills。
+- **工程实现线索**：以 [pengchengneo/Claude-Code](https://github.com/pengchengneo/Claude-Code) 的源码还原文档为主要参考，重点只取 code agent 核心能力，不展开宠物、语音、贴纸等旁支功能。
+
+### 为什么要补这一节
+
+前面的 3.11 主要讲了两个教学模型：
+
+- `exp3_11b_multi_agent_openai.py`：固定角色 Team，重点是 `scanner -> analyzer -> reporter` 这种共享 state 调度。
+- `exp3_11c_subagent_runtime_openai.py`：主 Agent 临时委派子任务，重点是 `primary -> subagent -> result` 这种父子 session。
+
+但 Claude Code 这类真实 code agent 的核心能力不止这两层。官方文档和源码还原材料显示，完整能力至少还包括：
+
+- 权限与隔离：工具能不能调用、文件能不能读写、危险操作如何拦截。
+- 指令加载：`CLAUDE.md`、`.claude/rules/`、skills、subagent prompt 分别进入上下文的时机不同。
+- Hook 生命周期：不是简单“执行脚本”，而是贯穿 session、tool use、compact、task、subagent、worktree 的控制面。
+- Agent Team：不是普通 subagent，而是有 shared task list、mailbox、teammate、team config 的协作运行时。
+- 记忆与持久化：不只是当前 messages，还包括 project memory、agent memory、session transcript、后台整合与长期任务。
+
+### 资料对照表
+
+| 能力层 | 官方文档锚点 | `pengchengneo/Claude-Code` 线索 | 本项目学习落点 |
+|--------|--------------|----------------------------------|----------------|
+| Subagent | [Claude Code Subagents](https://code.claude.com/docs/en/subagents) | `/fork`、`FORK_SUBAGENT`、独立上下文 | `exp3_11c_subagent_runtime_openai.py` |
+| Agent Team | [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams) | `--agent-teams`、team/task 本地状态 | `exp3_11e_agent_team_runtime_openai.py` |
+| Coordinator / Worker | 官方 Agent Team 与 Subagent 共同提供边界 | `src/coordinator/`、`COORDINATOR_MODE` | `exp3_11d_coordinator_runtime_openai.py` |
+| Hooks | [Claude Code Hooks](https://code.claude.com/docs/en/hooks) | `src/hooks/`、生命周期事件 | `exp3_11f_hook_control_plane_openai.py` |
+| 指令加载 | [Claude Code Memory](https://code.claude.com/docs/en/memory) | `CLAUDE.md`、rules、skills、prompt assembly | `exp3_11g_instruction_permission_runtime_openai.py` |
+| 权限控制 | [Claude Code Settings](https://code.claude.com/docs/en/settings) 与 [Agent SDK Permissions](https://code.claude.com/docs/en/agent-sdk/permissions) | permission mode、Bash classifier、transcript classifier | `exp3_11f / exp3_11g` |
+| 上下文压缩 | [Claude Code Hooks - PreCompact/PostCompact](https://code.claude.com/docs/en/hooks) | `CONTEXT_COLLAPSE`、`REACTIVE_COMPACT`、`HISTORY_SNIP`、`TOKEN_BUDGET` | `exp3_11h_context_memory_runtime_openai.py` |
+| 记忆系统 | [Claude Code Memory](https://code.claude.com/docs/en/memory) | `EXTRACT_MEMORIES`、`TEAMMEM`、`KAIROS / Dream` | `exp3_11h` |
+| 长生命周期 | [Claude Code Hooks - SessionEnd/WorktreeCreate](https://code.claude.com/docs/en/hooks) | `KAIROS`、cron、background tasks、lock | 待补 `3.13 / 3.14` 生产化章节 |
+
+### 核心概念边界
+
+这几组概念必须分开：
+
+| 概念 | 解决的问题 | 不要混淆成 |
+|------|------------|------------|
+| **Subagent** | 父 Agent 把一个局部任务委派出去，子 Agent 独立上下文执行后返回摘要 | Agent Team |
+| **Agent Team** | 多个独立 teammate 通过 shared task list / mailbox / lead 协作 | 普通工具调用 |
+| **Coordinator** | 主 Agent 只负责拆解、派活、综合，不直接改代码 | 会写代码的万能 Supervisor |
+| **Hook** | 在生命周期事件上注入控制、校验、阻断或上下文 | Prompt 技巧 |
+| **CLAUDE.md / rules** | 长期项目指令和路径规则加载 | 记忆数据库 |
+| **Memory** | 跨会话或跨任务保留有价值事实 | 当前上下文 |
+| **Permission** | 决定工具调用是否允许执行 | Tool schema |
+| **Worktree / Session** | 隔离并持久化一次执行环境 | 普通消息历史 |
+
+### 后续学习任务拆分
+
+接下来不继续堆更多“扫描 / 分析 / 报告”示例，而是按 Claude Code 的核心能力层补实验。
+
+#### 任务 1：补齐 Subagent Runtime 讲解
+
+对应代码：
+
+- [D:\Code\BeginningWithAI\experiments\phase3\exp3_11c_subagent_runtime_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11c_subagent_runtime_openai.py)
+
+学习目标：
+
+- 看懂 `primary agent` 和 `subagent` 为什么不是同一个上下文。
+- 看懂 `Task` 委派原语如何启动 child session。
+- 看懂 `@explore` 这种显式 subagent 入口与自动委派的区别。
+- 看懂为什么 subagent 的工具权限必须独立配置。
+
+验收问题：
+
+- 为什么 `explore` 适合读代码但不应该写文件？
+- 为什么子 Agent 的 tool results 不应该全部灌回父 Agent 上下文？
+- `subagent` 和 `fork` 的最大区别是什么？
+
+#### 任务 2：新增 Coordinator / Worker Runtime
+
+对应代码：
+
+- [D:\Code\BeginningWithAI\experiments\phase3\exp3_11d_coordinator_runtime_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py)
+
+参考能力：
+
+- `pengchengneo/Claude-Code` 的 `Coordinator` 文档把 Coordinator 限制为派活、通信、停工三类能力。
+- Worker 独立执行，并把结果以结构化通知形式交回 Coordinator。
+- 标准流程是 `Research -> Synthesis -> Implementation -> Verification`。
+
+本项目实现目标：
+
+- [CoordinatorRuntime](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:349) 不直接读写代码，只能调用 `agent`、`send_message`、`task_stop` 三个控制工具。
+- [WorkerSpec](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:274) 定义 `research / implementation / verification` 三类 Worker。
+- [TaskStore](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:309) 用本地 JSON 文件模拟 shared task list。
+- [run_coordinator()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:399) 演示 Coordinator 通过 LLM 自主派发 Worker。
+- [run_scripted_demo()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:438) 用固定计划验证 runtime 行为，避免调试时被模型规划不稳定干扰。
+- [_coordinator_tool_schemas()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:619) 是 Coordinator 的工具权限边界，里面只有 `agent / send_message / task_stop`。
+
+运行方式：
+
+```bash
+./venv/bin/python experiments/phase3/exp3_11d_coordinator_runtime_openai.py --help
+./venv/bin/python experiments/phase3/exp3_11d_coordinator_runtime_openai.py --scripted --max-rounds 5
+./venv/bin/python experiments/phase3/exp3_11d_coordinator_runtime_openai.py --max-rounds 4 --task "只派一个 research worker 分析 experiments/phase3/exp3_11b_multi_agent_openai.py 中 create_agents、choose_next_agent、run_supervisor 的关系。worker 完成后你直接总结。"
+```
+
+验证结论：
+
+- `py_compile` 通过。
+- `--help` 通过。
+- `--scripted --max-rounds 5` 通过：Research Worker 完成代码结构分析，Verification Worker 使用 `./venv/bin/python` 验证 `exp3_11b --help` 成功。
+- 非 scripted 模式通过：Coordinator 成功通过 `agent` 控制工具派出 `research` Worker，并综合 Worker 结果。
+
+验收问题：
+
+- 为什么 Coordinator 工具越少，反而越容易形成稳定分工？
+- 为什么 Worker prompt 必须自包含？
+- 什么时候应该继续已有 Worker，什么时候应该 spawn 新 Worker？
+
+#### 任务 3：新增 Agent Team Runtime
+
+对应代码：
+
+- [D:\Code\BeginningWithAI\experiments\phase3\exp3_11e_agent_team_runtime_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py)
+
+参考能力：
+
+- 官方 Agent Teams 文档把 Team 拆成 `team lead`、`teammates`、`task list`、`mailbox`。
+- Team 和 Subagent 的官方区别是：Subagent 只把结果回给主 Agent；Team 允许 teammate 之间直接通信，并通过共享任务列表协作。
+
+本项目实现目标：
+
+- [TeamMember](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:59) 定义 teammate 的 agent type、system prompt、工具权限和模型。
+- [TeamTask](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:70) 是 shared task list 的任务记录，包含 `pending / in_progress / blocked / completed`。
+- [MailboxMessage](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:83) 是 teammate 之间的直接消息。
+- [TeamStore](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:101) 把 team config、tasks、mailbox 落到本地 JSON 文件。
+- [AgentTeamRuntime](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:210) 负责运行 teammates，并维护共享任务和邮箱。
+- [run_scripted_demo()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:276) 用固定 lead 计划稳定演示 team runtime。
+- [run_teammate()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:317) 每次启动一个独立 teammate session。
+- [_tool_schemas_for_member()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:428) 根据 teammate 权限暴露工具。
+
+运行方式：
+
+```bash
+./venv/bin/python experiments/phase3/exp3_11e_agent_team_runtime_openai.py --help
+./venv/bin/python experiments/phase3/exp3_11e_agent_team_runtime_openai.py --scripted --max-rounds 3
+```
+
+验证结论：
+
+- `py_compile` 通过。
+- `--help` 通过。
+- clean-state `--scripted --max-rounds 3` 通过：三个 task 都进入 `completed`，task list 和 mailbox 都写入本地 JSON。
+- mailbox 验证通过：`architect -> critic` 的消息存在，critic 读取自己的 inbox 时能看到这条消息。
+- verification task 通过：verifier 使用 `shell` 工具运行 `./venv/bin/python experiments/phase3/exp3_11e_agent_team_runtime_openai.py --help`，returncode 为 0。
+
+验收问题：
+
+- Agent Team 为什么比 Subagent 更贵？
+- Team 的 shared task list 和 3.11b 的共享 `state` 有什么区别？
+- teammate 之间直接通信会引入什么新的失败模式？
+
+#### 任务 4：新增 Hook 控制面
+
+对应代码：
+
+- [D:\Code\BeginningWithAI\experiments\phase3\exp3_11f_hook_control_plane_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11f_hook_control_plane_openai.py)
+
+参考能力：
+
+- 官方 Hooks 文档把事件放在完整生命周期里：`SessionStart`、`UserPromptSubmit`、`PreToolUse`、`PostToolUse`、`TaskCreated`、`TaskCompleted`、`SubagentStart`、`SubagentStop`、`PreCompact`、`PostCompact`、`SessionEnd`、`WorktreeCreate`、`WorktreeRemove`。
+- Hook 不是模型能力，而是 runtime 在关键事件上执行的控制逻辑。
+
+本项目实现目标：
+
+- 实现 `HookRegistry` 和 `HookDecision`。
+- 在工具执行前触发 `PreToolUse`，允许 block / allow。
+- 在工具执行后触发 `PostToolUse`，记录审计日志。
+- 在任务完成前触发 `TaskCompleted`，如果验证未通过则阻断完成。
+- 在压缩前后触发 `PreCompact / PostCompact`，演示上下文压缩生命周期。
+
+运行方式：
+
+```bash
+./venv/bin/python experiments/phase3/exp3_11f_hook_control_plane_openai.py --scripted
+```
+
+验证结论：
+
+- `py_compile` 通过。
+- `--help` 通过。
+- `--scripted` 通过：`.env` 读取被 `PreToolUse` 阻断，破坏性 shell 被阻断，`TaskCompleted` 在验证前被阻断，验证通过后允许完成，`PreCompact / PostCompact` 写入 compact log。
+
+验收问题：
+
+- 为什么权限控制不能只写进 prompt？
+- `PreToolUse` 和 `PostToolUse` 的根本差异是什么？
+- 为什么 `TaskCompleted` hook 比“让模型自觉跑测试”更可靠？
+
+#### 任务 5：新增 Instruction / Permission Runtime
+
+对应代码：
+
+- [D:\Code\BeginningWithAI\experiments\phase3\exp3_11g_instruction_permission_runtime_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11g_instruction_permission_runtime_openai.py)
+
+参考能力：
+
+- 官方 Memory 文档中，`CLAUDE.md` 有 managed、user、project、local 多级加载。
+- `.claude/rules/` 可以按路径加载规则。
+- 官方 Settings 文档用 `permissions.deny` 阻止读取 `.env`、`secrets/**` 等敏感路径。
+
+本项目实现目标：
+
+- 模拟加载 `CLAUDE.md`、`.claude/rules/*.md` 和 `.claude/settings.json`。
+- 区分“指令加载”和“权限强制”：前者告诉 Agent 应该怎么做，后者决定工具是否允许执行。
+- 实现 `permissions.deny` 对 `read / grep / glob` 的统一过滤。
+- 演示 subagent 如何继承或覆盖工具权限。
+
+运行方式：
+
+```bash
+./venv/bin/python experiments/phase3/exp3_11g_instruction_permission_runtime_openai.py --scripted
+```
+
+验证结论：
+
+- `py_compile` 通过。
+- `--help` 通过。
+- `--scripted` 通过：`CLAUDE.md` import 了 `AGENTS.md`，Python rule 按路径加载，`.claude/settings.json` 被加载，`.env` 和 `secrets/token.txt` 被 `permissions.deny` 阻断。
+
+验收问题：
+
+- 为什么 `CLAUDE.md` 不能替代权限系统？
+- 为什么 rules 要支持路径匹配？
+- 为什么 settings 是 JSON，而 instructions 是 Markdown？
+
+#### 任务 6：新增 Context / Memory Runtime
+
+对应代码：
+
+- [D:\Code\BeginningWithAI\experiments\phase3\exp3_11h_context_memory_runtime_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11h_context_memory_runtime_openai.py)
+
+参考能力：
+
+- 官方文档把项目指令、规则、skills、subagent memory 分开处理。
+- `pengchengneo/Claude-Code` 的 KAIROS / Dream 文档提供了长期记忆整合线索：每日日志、后台整合、锁、索引文件、过期事实清理。
+
+本项目实现目标：
+
+- 实现 `transcript.jsonl` 保存每轮消息。
+- 实现 token budget 近似估算。
+- 实现 `compact()`：把长历史压缩成摘要，并触发 `PreCompact / PostCompact`。
+- 实现 `MEMORY.md` 索引和 topic memory 文件。
+- 实现 `extract_memory()`：从完成的任务中抽取稳定事实，而不是把所有对话都存成记忆。
+
+运行方式：
+
+```bash
+./venv/bin/python experiments/phase3/exp3_11h_context_memory_runtime_openai.py --scripted
+```
+
+验证结论：
+
+- `py_compile` 通过。
+- `--help` 通过。
+- `--scripted` 通过：长上下文触发 compact，`transcript.jsonl` 保存完整会话，`MEMORY.md` 只保存 topic 索引，稳定事实被写入 topic memory 文件。
+
+验收问题：
+
+- 上下文压缩和记忆抽取有什么区别？
+- 为什么 memory 需要索引文件？
+- 为什么长期记忆必须有删除和修正机制？
+
+### 推荐学习顺序
+
+```text
+3.11b 固定 Team
+  -> 3.11c 主 Agent + Subagent
+  -> 3.11d Coordinator / Worker
+  -> 3.11e Agent Team
+  -> 3.11f Hook 控制面
+  -> 3.11g Instruction / Permission
+  -> 3.11h Context / Memory
+  -> 3.13/3.14 生产化与综合平台
+```
+
+这条线的核心不是“多写几个 Agent”，而是逐步补齐真实 code agent 的运行时能力：
+
+```text
+agent loop
+  -> tool permission
+  -> delegated subtask
+  -> team coordination
+  -> lifecycle hooks
+  -> instruction loading
+  -> context compaction
+  -> persistent memory
+  -> long-running session
+```
 
 ---
 
@@ -1311,6 +1625,139 @@ python3 experiments/phase3/exp3_2_react_agent.py --backend openai
 ```
 
 > **核心差异**：相比实验 3.1 的 Function Calling（模型通过 `tool_calls` 结构化返回工具调用），ReAct Agent 使用**纯文本提示词**引导模型输出 `Thought/Action/Action Input` 格式，再用正则表达式解析。这是两种完全不同的工具调用范式。
+
+### 专题 3.3x：Reasoning Trace、思维链与 ReAct Scratchpad
+
+这一节补充一个容易混淆但很关键的点：
+
+> 真实 code agent 需要可观察的“推理轨迹”，但这不等于要求模型把隐藏思维链完整暴露给用户或日志系统。
+
+结合 Claude Code 官方文档和 `pengchengneo/Claude-Code` 源码还原材料，可以把相关概念拆成 5 层：
+
+| 层次 | 含义 | 本项目中对应位置 |
+|------|------|------------------|
+| Hidden reasoning | 模型内部推理或 provider 的受保护 thinking block | 不作为教学输出，不要求模型泄露 |
+| `reasoning_content` / `thinking` block | provider/API 需要在多轮工具调用中保留的推理字段 | [D:\Code\BeginningWithAI\experiments\phase3\exp3_11b_multi_agent_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11b_multi_agent_openai.py:248) |
+| ReAct Scratchpad | 人为设计的 `Thought/Action/Observation` 工作区 | [D:\Code\BeginningWithAI\experiments\phase3\exp3_2_react_agent.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_2_react_agent.py:157) |
+| Reasoning summary | 面向用户的简短计划、证据、风险和结论 | 后续所有 code agent 输出都应该采用这种形式 |
+| Audit trace | runtime 记录的工具调用、权限判断、上下文压缩、任务完成状态 | [D:\Code\BeginningWithAI\experiments\phase3\exp3_11f_hook_control_plane_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11f_hook_control_plane_openai.py) |
+
+#### 1. Claude Code 官方文档中的边界
+
+Claude Code 官方文档把 code agent 的底层循环描述为：
+
+```text
+gather context -> take action -> verify results -> repeat
+```
+
+也就是：
+
+- 模型负责理解代码、拆解任务、决定下一步。
+- runtime 提供文件、搜索、执行、Web、子代理等工具。
+- 每次工具结果都会回到上下文，影响下一步决策。
+- 复杂任务可以先进入 plan mode，先研究和计划，再执行修改。
+
+这和本项目的 ReAct / Function Calling / Multi-Agent 实验是一条主线：
+
+```text
+模型决策
+  -> 工具调用
+  -> 工具结果回填
+  -> 模型继续决策
+  -> 直到最终回答或达到限制
+```
+
+Claude Code 官方文档还单独说明了 reasoning effort 和 extended thinking：
+
+- `/effort`、`--effort`、`CLAUDE_CODE_EFFORT_LEVEL` 可以控制推理投入。
+- `ultrathink` 是一次性深度推理触发词，官方文档说明它会添加上下文指令，但不改变发送到 API 的 effort level。
+- extended thinking 默认折叠显示；在交互界面中可能是 redacted thinking block。
+- 用户需要为 thinking token 付费，即使这些内容被折叠或被 redacted。
+- Skill 和 subagent frontmatter 也可以设置 `effort`，说明推理预算是 runtime 配置的一部分，不只是 prompt 文案。
+
+所以，工程上要学的不是“让模型多写几段思考”，而是：
+
+> 在不同任务复杂度下，如何分配 reasoning effort，并把行动、证据、验证结果以可审计方式暴露出来。
+
+参考资料：
+
+- [Claude Code: How Claude Code works](https://code.claude.com/docs/en/how-claude-code-works)
+- [Claude Code: Model configuration](https://code.claude.com/docs/en/model-config)
+- [Claude Code Agent SDK: How the agent loop works](https://code.claude.com/docs/en/agent-sdk/agent-loop)
+
+#### 2. GitHub 源码还原材料中的工程线索
+
+`pengchengneo/Claude-Code` 是非官方源码还原仓库，但它提供了很有价值的工程观察。结合源码路径可以看到，Claude Code 风格 runtime 并不是简单地“打印思维链”，而是围绕 thinking block 做了很多工程控制：
+
+> 注意：官方文档代表当前公开能力边界；源码还原材料代表某个还原版本里的工程实现线索。若两者在模型名、effort 枚举或开关名称上出现差异，课程以官方文档为准，用源码理解机制。
+
+| 源码位置 | 观察点 | 对本项目的启发 |
+|----------|--------|----------------|
+| [`src/utils/thinking.ts`](https://github.com/pengchengneo/Claude-Code/blob/main/src/utils/thinking.ts) | 定义 `ThinkingConfig`：`adaptive / enabled / disabled`，并检测 `ultrathink` 关键词 | thinking 是 runtime 配置，不是普通输出文本 |
+| [`src/utils/effort.ts`](https://github.com/pengchengneo/Claude-Code/blob/main/src/utils/effort.ts) | 定义 effort levels，并按 env、session、模型默认值解析最终 effort | reasoning budget 应有明确优先级 |
+| [`src/query.ts`](https://github.com/pengchengneo/Claude-Code/blob/main/src/query.ts) | 在主 agent loop 中把 `thinkingConfig` 连同 messages/tools 一起传给模型调用 | 推理配置属于每轮模型请求的一部分 |
+| [`src/utils/messages.ts`](https://github.com/pengchengneo/Claude-Code/blob/main/src/utils/messages.ts) | 流式处理中区分 `thinking / redacted_thinking / text / tool_use`，并过滤尾部或孤立 thinking block | thinking block 有 API 格式约束，不能随便改写 |
+| [`src/tools/AgentTool/runAgent.ts`](https://github.com/pengchengneo/Claude-Code/blob/main/src/tools/AgentTool/runAgent.ts) | 普通 subagent 默认禁用 thinking 来控制输出 token 成本，fork child 可继承 thinkingConfig 以利用 prompt cache | subagent 的推理预算要按任务类型单独控制 |
+| [`src/tools/AgentTool/forkSubagent.ts`](https://github.com/pengchengneo/Claude-Code/blob/main/src/tools/AgentTool/forkSubagent.ts) | fork 子任务保留父 assistant message 的 thinking/text/tool_use，但 worker 输出规则要求“不 thinking-out-loud” | 内部轨迹可用于继续执行，但最终报告要结构化、简洁 |
+
+这和我们在 OpenAI 兼容实现里保留 `reasoning_content` 的原因一致：
+
+```python
+reasoning_content = getattr(message, "reasoning_content", None)
+if reasoning_content:
+    assistant_message["reasoning_content"] = reasoning_content
+```
+
+这段代码不是“展示思维链”，而是为了让 provider 在工具调用后的下一轮请求中看到它要求保留的推理字段。对 deepseek-v4-pro 这类 OpenAI 兼容 provider，如果上一轮 assistant tool call 带了 reasoning 内容，后续 tool result 回填时丢掉该字段，可能触发格式错误。
+
+#### 3. ReAct Scratchpad 不是隐藏思维链
+
+本项目手写 ReAct 实验里的提示词是：
+
+```text
+Thought: [你的思考过程]
+Action: [工具名称]
+Action Input: [JSON格式的参数]
+Observation: [工具结果]
+```
+
+这里的 `Thought` 是我们显式设计出来的 scratchpad 字段。它的作用是教学和调试：
+
+- 让你看到模型为什么选择某个工具。
+- 让下一轮 prompt 能带上前面的行动历史。
+- 让你理解 ReAct 与 Function Calling 的差异。
+
+但它不等于模型的隐藏内部思维。真实生产系统通常不应该把完整 `Thought` 当作最终用户输出或长期日志。更稳妥的做法是保留下面这些可审计字段：
+
+```json
+{
+  "plan": ["准备做什么"],
+  "actions": ["实际调用了哪些工具"],
+  "evidence": ["关键工具结果或文件证据"],
+  "risks": ["仍不确定或需要人工确认的点"],
+  "final_answer": "给用户的结论"
+}
+```
+
+这也是后续 code agent runtime 课程要统一采用的输出风格：用户看到计划、行动、证据和结论；runtime 保存工具调用和权限日志；provider 特有的 hidden thinking 字段只做协议级传递。
+
+#### 4. 与本项目代码逐行学习的对应关系
+
+推荐按这个顺序阅读：
+
+1. [D:\Code\BeginningWithAI\experiments\phase3\exp3_2_react_agent.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_2_react_agent.py:157)：先看 `_create_prompt()` 如何把 `Thought/Action/Observation` 写成文本协议。
+2. [D:\Code\BeginningWithAI\experiments\phase3\exp3_2_react_agent.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_2_react_agent.py:200)：再看 `_parse_response()` 如何用正则从模型文本里拆出 `thought/action/final_answer`。
+3. [D:\Code\BeginningWithAI\experiments\phase3\exp3_2_react_agent.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_2_react_agent.py:238)：继续看 `run()` 如何把 Observation 拼回 history，形成 ReAct 循环。
+4. [D:\Code\BeginningWithAI\experiments\phase3\exp3_2b_guarded_single_agent.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_2b_guarded_single_agent.py:176)：对比工程化版本如何增加任务契约、最终答案校验和修复重试。
+5. [D:\Code\BeginningWithAI\experiments\phase3\exp3_11b_multi_agent_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11b_multi_agent_openai.py:248)：最后看 OpenAI 兼容工具调用里为什么要把 `tool_calls` 和 `reasoning_content` 放回 assistant history。
+
+#### 5. 学习验收问题
+
+- ReAct 的 `Thought` 是模型隐藏思维链，还是 prompt 设计出来的可解析字段？
+- 为什么生产环境更应该输出 `plan/actions/evidence/risks/final_answer`，而不是完整 `Thought`？
+- 为什么 `reasoning_content` 要回填到下一轮请求，但不应该直接展示给用户？
+- Claude Code 源码还原材料里，为什么普通 subagent 会默认禁用 thinking？
+- `effort`、`extended thinking`、`ultrathink` 分别属于模型能力、runtime 配置，还是普通 prompt 文本？
 
 ### 验证标准
 
@@ -3800,8 +4247,20 @@ python experiments/phase3/exp3_10_langgraph_workflow.py example.com --backend op
 
 - LangGraph 版：[D:\Code\BeginningWithAI\experiments\phase3\exp3_11_multi_agent.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11_multi_agent.py)
 - OpenAI SDK 版：[D:\Code\BeginningWithAI\experiments\phase3\exp3_11b_multi_agent_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11b_multi_agent_openai.py)
+- OpenAI SDK Subagent Runtime 版：[D:\Code\BeginningWithAI\experiments\phase3\exp3_11c_subagent_runtime_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11c_subagent_runtime_openai.py)
+- OpenAI SDK Coordinator / Worker 版：[D:\Code\BeginningWithAI\experiments\phase3\exp3_11d_coordinator_runtime_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py)
+- OpenAI SDK Agent Team 版：[D:\Code\BeginningWithAI\experiments\phase3\exp3_11e_agent_team_runtime_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py)
+- OpenAI SDK Hook 控制面版：[D:\Code\BeginningWithAI\experiments\phase3\exp3_11f_hook_control_plane_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11f_hook_control_plane_openai.py)
+- OpenAI SDK Instruction / Permission 版：[D:\Code\BeginningWithAI\experiments\phase3\exp3_11g_instruction_permission_runtime_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11g_instruction_permission_runtime_openai.py)
+- OpenAI SDK Context / Memory 版：[D:\Code\BeginningWithAI\experiments\phase3\exp3_11h_context_memory_runtime_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11h_context_memory_runtime_openai.py)
 - LangGraph 版建议顺序： [SupervisorState](D:/Code/BeginningWithAI/experiments/phase3/exp3_11_multi_agent.py:183) → [build_supervisor_workflow()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11_multi_agent.py:192) → [SwarmState](D:/Code/BeginningWithAI/experiments/phase3/exp3_11_multi_agent.py:296) → [build_swarm_workflow()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11_multi_agent.py:305)
 - OpenAI SDK 版建议顺序： [OpenAIToolAgent](D:/Code/BeginningWithAI/experiments/phase3/exp3_11b_multi_agent_openai.py:177) → [create_agents()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11b_multi_agent_openai.py:270) → [choose_next_agent()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11b_multi_agent_openai.py:296) → [run_supervisor()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11b_multi_agent_openai.py:307) → [run_swarm()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11b_multi_agent_openai.py:334)
+- Subagent Runtime 版建议顺序： [AgentSpec](D:/Code/BeginningWithAI/experiments/phase3/exp3_11c_subagent_runtime_openai.py:250) → [SessionRecord](D:/Code/BeginningWithAI/experiments/phase3/exp3_11c_subagent_runtime_openai.py:273) → [SubagentRuntime](D:/Code/BeginningWithAI/experiments/phase3/exp3_11c_subagent_runtime_openai.py:299) → [_build_specs()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11c_subagent_runtime_openai.py:329) → [run()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11c_subagent_runtime_openai.py:416) → [_execute_tool()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11c_subagent_runtime_openai.py:535)
+- Coordinator / Worker 版建议顺序： [WorkerSpec](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:274) → [TaskStore](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:309) → [CoordinatorRuntime](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:349) → [run_coordinator()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:399) → [run_scripted_demo()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:438) → [_coordinator_tool_schemas()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11d_coordinator_runtime_openai.py:619)
+- Agent Team 版建议顺序： [TeamMember](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:59) → [TeamTask](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:70) → [MailboxMessage](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:83) → [TeamStore](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:101) → [AgentTeamRuntime](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:210) → [run_teammate()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11e_agent_team_runtime_openai.py:317)
+- Hook 控制面版建议顺序： [HookRegistry](D:/Code/BeginningWithAI/experiments/phase3/exp3_11f_hook_control_plane_openai.py:60) → [HookedRuntime](D:/Code/BeginningWithAI/experiments/phase3/exp3_11f_hook_control_plane_openai.py:85) → [run_tool()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11f_hook_control_plane_openai.py:143) → [compact()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11f_hook_control_plane_openai.py:171) → [run_scripted_demo()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11f_hook_control_plane_openai.py:181)
+- Instruction / Permission 版建议顺序： [DemoWorkspace](D:/Code/BeginningWithAI/experiments/phase3/exp3_11g_instruction_permission_runtime_openai.py:57) → [InstructionPermissionRuntime](D:/Code/BeginningWithAI/experiments/phase3/exp3_11g_instruction_permission_runtime_openai.py:131) → [assemble()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11g_instruction_permission_runtime_openai.py:143) → [read_file()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11g_instruction_permission_runtime_openai.py:175)
+- Context / Memory 版建议顺序： [TranscriptStore](D:/Code/BeginningWithAI/experiments/phase3/exp3_11h_context_memory_runtime_openai.py:62) → [MemoryStore](D:/Code/BeginningWithAI/experiments/phase3/exp3_11h_context_memory_runtime_openai.py:79) → [ContextMemoryRuntime](D:/Code/BeginningWithAI/experiments/phase3/exp3_11h_context_memory_runtime_openai.py:126) → [compact()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11h_context_memory_runtime_openai.py:157) → [extract_memory()](D:/Code/BeginningWithAI/experiments/phase3/exp3_11h_context_memory_runtime_openai.py:170)
 
 ### 📖 核心概念：为什么需要多 Agent
 
