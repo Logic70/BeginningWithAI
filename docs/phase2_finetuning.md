@@ -1,12 +1,15 @@
-# 阶段二：模型微调与后训练
+# 阶段二：RAG、模型微调与后训练
 
-> 预计时间：3-4 周 | 核心问题：如何让模型在特定任务上表现得更专业？
+> 预计时间：3-4 周 | 核心问题：如何让模型利用外部知识，并在特定任务上表现得更专业？
 
 ---
 
 ## 🎯 阶段目标
 
 完成本阶段后，你将能够：
+- ✅ 理解 RAG 的基本链路：切块、检索、上下文组装、生成
+- ✅ 构建一个面向安全知识库的最小 RAG 问答原型
+- ✅ 判断 RAG、微调、Agent 工具调用分别适合解决什么问题
 - ✅ 理解 LoRA/QLoRA 微调原理
 - ✅ 准备和格式化训练数据集
 - ✅ 使用 Unsloth 进行高效微调
@@ -14,7 +17,142 @@
 
 ---
 
-## 📖 微调核心概念
+## 📖 RAG 与微调核心概念
+
+### 为什么阶段二要同时学习 RAG 和微调？
+
+阶段二的核心不是“只会训练模型”，而是学会让模型在安全领域更可靠。常见有两条路线：
+
+- **RAG**：不改模型参数，把外部知识检索出来放进上下文，让模型基于资料回答。
+- **微调**：改模型的部分参数，让模型学会更稳定的输出风格、任务格式和领域表达。
+
+两者不是替代关系，而是互补关系。
+
+| 场景 | 优先选择 | 原因 |
+|------|----------|------|
+| 知识频繁更新，例如 CVE、厂商公告、内部规范 | RAG | 更新知识库比重新训练模型更快 |
+| 需要引用来源、保留证据链 | RAG | 可以把检索到的文档片段作为回答依据 |
+| 模型回答格式不稳定 | 微调 | 让模型学习固定输出结构 |
+| 需要领域语气、术语、分类标准 | 微调 | 让模型形成稳定表达习惯 |
+| 需要调用扫描器、读文件、执行命令 | Agent / Tool | 这是执行能力，不是 RAG 或微调本身 |
+
+一句话判断：
+
+> 知识问题先用 RAG，行为和格式问题再考虑微调，需要执行外部动作时进入 Agent。
+
+### RAG 最小链路
+
+```text
+原始文档
+  -> 文档切块 chunking
+  -> 向量化 embedding
+  -> 相似度检索 retrieval
+  -> 组装上下文 context
+  -> 模型基于上下文回答 generation
+```
+
+RAG 的关键不是“把文档全部塞给模型”，而是只把和问题最相关的片段放进上下文。
+
+本项目先用一个最小可运行版本理解链路：
+
+- 用公开安全知识学习材料作为文档源。
+- 用本地词袋向量模拟 embedding，避免一开始依赖向量数据库。
+- 用余弦相似度做 Top-K 检索。
+- 默认只输出检索上下文和本地摘要，避免消耗 API 额度。
+- 可选 `--backend openai` 再调用 OpenAI 兼容接口生成答案。
+
+### 阶段二 RAG 学习路线
+
+RAG 重新加入阶段二，但不和微调混在一起讲。推荐顺序是：
+
+```text
+2.0a 公开数据 RAG 练习
+  -> 2.0b WorkflowProgram 项目知识 RAG for Claude Code
+  -> 2.1 LoRA 原理
+  -> 2.2 Unsloth 环境
+  -> 2.3-2.9 微调、评估、部署
+```
+
+### 实践边界说明
+
+下面这些内容是当前仓库里可以直接实践的：
+
+| 内容 | 当前状态 | 说明 |
+|------|----------|------|
+| 2.0a 公开数据本地 RAG 检索 | 已验证可运行 | 不依赖 GPU，不调用模型 |
+| 2.0a OpenAI 兼容模型生成 | 已验证可运行 | 需要使用项目虚拟环境和 `.env` |
+| 2.0b 本地目录 RAG 上下文包生成 | 已验证可运行 | 已用 `docs` 目录模拟 WorkflowProgram 源路径 |
+| 2.0b 真实 WorkflowProgram RAG | 需要外部路径 | 当前仓库没有 WorkflowProgram 源码，拿到路径后用 `--source-root` 接入 |
+| 生产级向量库 / Embedding 模型 | 暂不包含 | 本阶段先学 RAG 机制，后续可替换为 Chroma、FAISS 或 pgvector |
+
+所以这部分是可实践的，但要明确：当前实现是**教学级最小 RAG**，不是生产级知识库系统。
+
+#### 2.0a：公开数据 RAG 练习
+
+对应文件：
+
+- 代码：[D:\Code\BeginningWithAI\experiments\phase2\exp2_0_public_rag_practice.py](D:/Code/BeginningWithAI/experiments/phase2/exp2_0_public_rag_practice.py)
+- 数据：[D:\Code\BeginningWithAI\data\rag\public_security_corpus.jsonl](D:/Code/BeginningWithAI/data/rag/public_security_corpus.jsonl)
+
+这个实验使用公开安全知识主题作为练习材料，包括 OWASP、NIST、MITRE ATT&CK、CISA KEV 等公开资料对应的原创摘要。这样做的目的不是训练安全专家模型，而是先把 RAG 链路跑通。
+
+运行方式：
+
+```bash
+./venv/bin/python experiments/phase2/exp2_0_public_rag_practice.py --query SQL注入
+./venv/bin/python experiments/phase2/exp2_0_public_rag_practice.py --query 零信任
+./venv/bin/python experiments/phase2/exp2_0_public_rag_practice.py --query 已知被利用漏洞 --backend openai
+```
+
+学习重点：
+
+- `load_corpus()`：读取 JSONL 文档。
+- `chunk_documents()`：把文档切成 chunk。
+- `tokenize()` / `vectorize()`：把文本转换成可检索表示。
+- `retrieve()`：计算相似度并选 Top-K。
+- `build_context()`：把检索结果组装成模型上下文。
+
+#### 2.0b：WorkflowProgram 项目知识 RAG for Claude Code
+
+对应文件：
+
+- [D:\Code\BeginningWithAI\experiments\phase2\exp2_0b_workflowprogram_rag_for_claudecode.py](D:/Code/BeginningWithAI/experiments/phase2/exp2_0b_workflowprogram_rag_for_claudecode.py)
+
+这个实验是阶段二 RAG 的最终目标：把 WorkflowProgram 的体系知识变成 Claude Code 可引用的 RAG 上下文包。
+
+它不假设 WorkflowProgram 在当前仓库里。等你有 WorkflowProgram 的本地路径后，传入 `--source-root` 即可：
+
+```bash
+./venv/bin/python experiments/phase2/exp2_0b_workflowprogram_rag_for_claudecode.py \
+  --source-root D:/Code/WorkflowProgram \
+  --query "WorkflowProgram 的核心对象模型是什么？" \
+  --export data/rag/workflowprogram_claude_context.md
+```
+
+生成的文件可以在 Claude Code 里作为上下文引用：
+
+```text
+请基于 @data/rag/workflowprogram_claude_context.md 中的证据回答：
+WorkflowProgram 的核心对象模型是什么？
+如果证据不足，请明确说明缺少哪类文件，不要编造实现。
+```
+
+生成的 `data/rag/*_claude_context.md` 已加入 `.gitignore`。原因是 WorkflowProgram 的检索上下文未来可能包含私有项目知识，不应该默认提交到公开仓库。
+
+在 WorkflowProgram 路径还没有接入前，可以先用本项目文档验证机制：
+
+```bash
+./venv/bin/python experiments/phase2/exp2_0b_workflowprogram_rag_for_claudecode.py \
+  --source-root docs \
+  --query "Subagent Runtime 和 Agent Team 有什么区别？" \
+  --export data/rag/workflowprogram_claude_context.md
+```
+
+学习重点：
+
+- 面向 code agent 的 RAG 不只是“回答知识问题”，还要保留文件路径、行号和证据片段。
+- Claude Code 侧不需要先实现复杂向量数据库；第一版可以通过 `@file` 引入检索后的上下文包。
+- 最终目标是让 Claude Code 基于 WorkflowProgram 的真实体系知识回答，而不是凭模型记忆编造。
 
 ### 为什么需要微调？
 
@@ -24,6 +162,12 @@
 | 特定输出风格 | ❌ 不适合 | ✅ 适合 |
 | 领域术语理解 | 一般 | ✅ 优秀 |
 | 复杂推理任务 | 一般 | ✅ 优秀 |
+
+补充说明：
+
+- 表里的“RAG 一般”不是说 RAG 没价值，而是说 RAG 主要负责提供事实依据，不负责改变模型能力边界。
+- 如果模型本身不会做某类推理，单纯检索资料不一定能解决。
+- 如果只是知识缺失，不应该优先微调。
 
 ### LoRA 原理
 
@@ -45,6 +189,100 @@ LoRA: W + ΔW = W + A × B
 ---
 
 ## 📦 环境准备
+
+### RAG 实验环境
+
+RAG 的 `2.0a / 2.0b` 实验不需要 GPU，也不需要 Unsloth。默认只使用 Python 标准库即可运行。
+
+#### 运行位置
+
+所有阶段二命令都建议从项目根目录运行：
+
+```bash
+cd /mnt/d/Code/BeginningWithAI
+```
+
+不要从 `experiments/phase2/` 子目录里直接运行。原因是实验代码会按项目根目录查找 `data/rag/`、`.env` 和导出路径。
+
+#### Python 环境
+
+优先使用项目虚拟环境：
+
+```bash
+./venv/bin/python --version
+./venv/bin/python experiments/phase2/exp2_0_public_rag_practice.py --query SQL注入
+```
+
+如果 `./venv/bin/python` 不存在，再使用系统 `python3`。但注意：系统 `python3` 只能运行不调用模型的本地检索模式；`--backend openai` 需要安装 `openai` 包。
+
+#### 实验前检查
+
+运行 RAG 前先执行：
+
+```bash
+# 1. 确认公开练习数据存在
+test -f data/rag/public_security_corpus.jsonl
+
+# 2. 确认两个 RAG 脚本语法正确
+./venv/bin/python -m py_compile \
+  experiments/phase2/exp2_0_public_rag_practice.py \
+  experiments/phase2/exp2_0b_workflowprogram_rag_for_claudecode.py
+
+# 3. 跑一个不消耗模型额度的本地检索
+./venv/bin/python experiments/phase2/exp2_0_public_rag_practice.py --query SQL注入
+```
+
+#### OpenAI 兼容模型准备
+
+如果要让 `2.0a` 在检索后调用 OpenAI 兼容模型生成答案，需要已有 `.env`，并使用安装了 `openai` 包的项目虚拟环境：
+
+```env
+OPENAI_API_KEY=your_api_key_here
+OPENAI_BASE_URL=https://opencode.ai/zen/go/v1
+OPENAI_MODEL=deepseek-v4-pro
+```
+
+验证命令：
+
+```bash
+./venv/bin/python experiments/phase2/exp2_0_public_rag_practice.py --query SQL注入 --backend openai
+```
+
+不加 `--backend openai` 时不会消耗模型额度。
+
+#### WorkflowProgram 路径准备
+
+`2.0b` 的最终目标是索引 WorkflowProgram 的体系知识，但当前仓库不包含 WorkflowProgram 源码。因此真实实验前需要准备一个本地路径，例如：
+
+```text
+D:/Code/WorkflowProgram
+```
+
+在 WSL 中对应路径是：
+
+```text
+/mnt/d/Code/WorkflowProgram
+```
+
+如果暂时没有 WorkflowProgram 路径，可以先用本项目 `docs` 目录模拟：
+
+```bash
+./venv/bin/python experiments/phase2/exp2_0b_workflowprogram_rag_for_claudecode.py \
+  --source-root docs \
+  --query Subagent \
+  --export /tmp/workflowprogram_claude_context.md
+```
+
+真实 WorkflowProgram 接入后再运行：
+
+```bash
+./venv/bin/python experiments/phase2/exp2_0b_workflowprogram_rag_for_claudecode.py \
+  --source-root /mnt/d/Code/WorkflowProgram \
+  --query "WorkflowProgram 的核心对象模型是什么？" \
+  --export data/rag/workflowprogram_claude_context.md
+```
+
+`data/rag/*_claude_context.md` 已加入 `.gitignore`，避免把项目私有知识上下文误提交。
 
 ### 硬件要求
 - **最低**: 16GB VRAM GPU (RTX 4060 Ti / RTX 3090)
@@ -640,6 +878,9 @@ ollama run security-qa "什么是SQL注入？"
 
 | 检查项 | 状态 |
 |--------|------|
+| 理解 RAG 与微调的边界 | ⬜ |
+| 公开数据 RAG 检索链路跑通 | ⬜ |
+| WorkflowProgram RAG 上下文包能生成 | ⬜ |
 | 理解 LoRA 原理 | ⬜ |
 | Unsloth 环境配置成功 | ⬜ |
 | 数据集准备完成 | ⬜ |

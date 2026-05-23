@@ -47,7 +47,9 @@
   -> 3.11f Hook Control Plane
   -> 3.11g Instruction / Permission
   -> 3.11h Context / Memory
+  -> 3.11i Internal / System Agent
   -> 3.12b A2A Protocol OpenAI
+  -> 3.13b Runtime Reliability
   -> 3.13 / 3.14b 生产化整合
 ```
 
@@ -58,6 +60,16 @@
 - 代码入口：`experiments/phase3/exp3_11c_subagent_runtime_openai.py`。
 
 如果用户纠正进度，以用户纠正为准。
+
+如果用户回到阶段二学习，默认把阶段二理解为：
+
+```text
+2.0a 公开数据 RAG 练习
+  -> 2.0b WorkflowProgram 项目知识 RAG for Claude Code
+  -> 2.1-2.9 LoRA / QLoRA 微调、评估、部署
+```
+
+阶段二的核心边界是：RAG 解决外部知识接入和证据引用，微调解决输出风格、任务格式和领域表达稳定性。
 
 ## 引导方式
 
@@ -108,6 +120,8 @@
 - Subagent 是父子委派，Agent Team 是同级协作。
 - Hook 是 runtime 控制面，不是 prompt 技巧。
 - Memory 是跨会话稳定事实，不是当前上下文。
+- Internal/System Agent 是 runtime 内部治理组件，不是普通用户对话角色。
+- Retry、fallback、checkpoint、trace、eval 是可靠性机制，不是模型能力。
 
 ### 4. 运行实验
 

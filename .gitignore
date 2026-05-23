@@ -34,3 +34,6 @@ dify/
 node_modules.zip
 skills-agent-proto/
 test_dvc/
+
+# Generated RAG context packs may contain private project knowledge
+data/rag/*_claude_context.md

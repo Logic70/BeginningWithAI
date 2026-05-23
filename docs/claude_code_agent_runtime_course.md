@@ -193,7 +193,45 @@
 - 为什么 memory 需要索引文件？
 - 长期记忆为什么必须支持修正和删除？
 
-### 模块 8：生产化整合
+### 模块 8：Internal / System Agent Runtime
+
+对应实验：
+
+- [D:\Code\BeginningWithAI\experiments\phase3\exp3_11i_internal_system_agent_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_11i_internal_system_agent_openai.py)
+
+学习目标：
+
+- 区分用户可见 Agent、subagent、internal/system agent。
+- 理解 `hidden=True` 的工程含义：内部系统组件参与判断，但不直接作为用户对话角色。
+- 实现 permission classifier、completion judge、context compactor、memory curator。
+- 用 `TaskContract` 约束完成判断，而不是让模型自行宣称任务完成。
+
+验收问题：
+
+- Internal/System Agent 和普通 subagent 的边界是什么？
+- 为什么 completion judge 应该读取结构化证据和测试结果？
+- 为什么 internal agent 可以输出短决策，但不应该暴露隐藏思维链？
+
+### 模块 9：Runtime Reliability
+
+对应实验：
+
+- [D:\Code\BeginningWithAI\experiments\phase3\exp3_13b_runtime_reliability_openai.py](D:/Code/BeginningWithAI/experiments/phase3/exp3_13b_runtime_reliability_openai.py)
+
+学习目标：
+
+- 理解 retry、fallback、checkpoint、trace、eval 是 code agent 的运行时可靠性能力。
+- 区分瞬时错误、永久错误和可降级错误。
+- 在每个关键阶段保存 checkpoint，并用 trace 支持复盘。
+- 用 eval 判断运行结果是否满足最小交付条件。
+
+验收问题：
+
+- retry 和 fallback 的边界是什么？
+- checkpoint 保存的是当前运行现场还是长期记忆？
+- trace 和 eval 为什么分别解决“发生了什么”和“算不算合格”两个问题？
+
+### 模块 10：生产化整合
 
 对应实验：
 
@@ -224,6 +262,8 @@
   -> 3.11f Hook Control Plane
   -> 3.11g Instruction / Permission
   -> 3.11h Context / Memory
+  -> 3.11i Internal / System Agent
+  -> 3.13b Runtime Reliability
   -> 3.13 / 3.14 生产化整合
 ```
 
@@ -239,14 +279,16 @@
 ./venv/bin/python experiments/phase3/exp3_11f_hook_control_plane_openai.py --scripted
 ./venv/bin/python experiments/phase3/exp3_11g_instruction_permission_runtime_openai.py --scripted
 ./venv/bin/python experiments/phase3/exp3_11h_context_memory_runtime_openai.py --scripted
+./venv/bin/python experiments/phase3/exp3_11i_internal_system_agent_openai.py --scripted
+./venv/bin/python experiments/phase3/exp3_13b_runtime_reliability_openai.py --scripted
 ```
 
 说明：
 
 - WSL 下优先使用 `./venv/bin/python`，不要使用裸 `python`。
 - `3.11b / 3.11c / 3.11d / 3.11e` 会调用真实模型，可能消耗额度。
-- `3.11f / 3.11g / 3.11h` 默认是确定性 runtime demo，不消耗模型额度。
-- `3.11d / 3.11e / 3.11f / 3.11g / 3.11h` 会在临时目录写入 state、task、mailbox、audit、memory 文件。
+- `3.11f / 3.11g / 3.11h / 3.11i / 3.13b` 默认是确定性 runtime demo，不消耗模型额度。
+- `3.11d / 3.11e / 3.11f / 3.11g / 3.11h / 3.11i / 3.13b` 会在临时目录写入 state、task、mailbox、audit、memory、trace 或 checkpoint 文件。
 
 ---
 
@@ -261,6 +303,8 @@
 | Hooks | `exp3_11f_hook_control_plane_openai.py` | 已接入 phase3 正文 | `py_compile` + `--help` + `--scripted` |
 | Instruction / Permission | `exp3_11g_instruction_permission_runtime_openai.py` | 已接入 phase3 正文 | `py_compile` + `--help` + `--scripted` |
 | Context / Memory | `exp3_11h_context_memory_runtime_openai.py` | 已接入 phase3 正文 | `py_compile` + `--help` + `--scripted` |
+| Internal / System Agent | `exp3_11i_internal_system_agent_openai.py` | 已接入 phase3 正文 | `py_compile` + `--help` + `--scripted` |
+| Runtime Reliability | `exp3_13b_runtime_reliability_openai.py` | 已接入 phase3 正文 | `py_compile` + `--help` + `--scripted` + `--resume` |
 | Production Integration | `exp3_13 / exp3_14b` | 待升级整合 | py_compile + targeted run |
 
 ---
@@ -274,4 +318,6 @@
 - Hook 为什么属于控制面。
 - `CLAUDE.md` 和 `permissions.deny` 为什么不是一类东西。
 - compact、transcript、memory 的边界在哪里。
+- Internal/System Agent 为什么适合承担权限分类、完成判断、压缩和记忆抽取。
+- retry、fallback、checkpoint、trace、eval 分别解决哪类可靠性问题。
 - 真实 code agent 为什么必须有 state、audit、permission、memory 和恢复机制。

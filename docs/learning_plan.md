@@ -13,9 +13,10 @@
 | 本地模型运维 | 能够本地部署、调用、管理开源LLM | 阶段一 |
 | 多后端接入 | 掌握 Ollama 本地 + OpenAI API Key 云端双模式 | 阶段一/三 |
 | LangChain 实践 | 理解原生实现后，用 LangChain 掌握最佳实践 | 阶段一/三 |
+| RAG 知识库 | 能够构建面向安全知识的检索增强问答系统 | 阶段二 |
 | 模型微调 | 能够针对特定领域进行 LoRA 微调 | 阶段二 |
 | Agent 开发 | 能够开发 Agent、MCP Server、Skill | 阶段三 |
-| Code Agent Runtime | 掌握 Subagent、Agent Team、Hook、权限、上下文和记忆机制 | 阶段三专项 |
+| Code Agent Runtime | 掌握 Subagent、Agent Team、Hook、权限、上下文、记忆、内部 Agent 与运行时可靠性机制 | 阶段三专项 |
 | 工作流编排 | 使用 Dify 平台可视化编排 Agent 工作流 | 阶段三 |
 | 多 Agent 协作 | 掌握 A2A 协议实现 Agent 间通信与协作 | 阶段三 |
 
@@ -26,13 +27,13 @@
 | 阶段 | 内容 | 起止时间 | 周期 |
 |------|------|----------|------|
 | 阶段一 | 基础认知与环境搭建 | 02/09 - 02/22 | 2 周 |
-| 阶段二 | 模型微调与后训练 | 02/23 - 03/22 | 4 周 |
+| 阶段二 | RAG、模型微调与后训练 | 02/23 - 03/22 | 4 周 |
 | 阶段三 | Agent / Dify / A2A 开发 | 03/23 - 05/17 | 8 周 |
 
 ```
 02/09       02/23       03/23                          05/17
   |--阶段一--|---阶段二----|----------阶段三--------------|
-  ├ 基础认知  ├ 模型微调    ├ Agent/MCP  ├ Dify   ├ A2A
+  ├ 基础认知  ├ RAG/微调    ├ Agent/MCP  ├ Dify   ├ A2A
   └ 环境搭建  └ 后训练      └ Skill      └ 工作流  └ 多Agent协作
 ```
 
@@ -59,19 +60,24 @@
 
 ---
 
-## 阶段二：模型微调与后训练（3-4周）
+## 阶段二：RAG、模型微调与后训练（3-4周）
 
 ### 🎯 核心问题
-> "如何让模型在特定任务上表现得更专业？"
+> "如何让模型利用外部知识，并在特定任务上表现得更专业？"
 
 ### 📋 任务清单
-1. **原理学习**：LoRA / QLoRA / PEFT 原理
-2. **数据准备**：安全领域数据集制作
-3. **微调实践**：使用 Unsloth 进行微调
-4. **模型评估**：评估指标与对比分析
-5. **模型部署**：量化导出与本地部署
+1. **RAG 原理**：文档切块、Embedding、向量检索、上下文组装
+2. **公开数据 RAG 实践**：使用公开安全知识材料构建检索增强问答原型
+3. **项目知识 RAG 实践**：把 WorkflowProgram 体系知识整理成 Claude Code 可引用上下文
+4. **原理学习**：LoRA / QLoRA / PEFT 原理
+5. **数据准备**：安全领域数据集制作
+6. **微调实践**：使用 Unsloth 进行微调
+7. **模型评估**：评估指标与对比分析
+8. **模型部署**：量化导出与本地部署
 
 ### 📖 理论知识
+- RAG 与微调的选型边界
+- Embedding、向量检索、召回与重排
 - 参数高效微调（PEFT）原理
 - LoRA 数学原理与实现
 - 训练数据格式（Alpaca、ShareGPT）
@@ -94,7 +100,8 @@
 4. **Skill 开发**：AI 编码助手扩展开发
 5. **Dify 工作流**：平台部署与可视化 Agent 编排
 6. **A2A 协议**：Agent 间通信与多 Agent 协作
-7. **综合项目**：自动化安全 Agent
+7. **Code Agent Runtime**：Subagent、Agent Team、Hook、权限、上下文、记忆、内部 Agent、checkpoint、trace、eval
+8. **综合项目**：自动化安全 Agent
 
 ### 📖 理论知识
 - Agent 架构设计模式
@@ -102,6 +109,7 @@
 - Dify 工作流编排与 Agent 节点
 - A2A 协议（Agent Card、JSON-RPC 2.0）
 - LangGraph 工作流设计
+- Internal/System Agent、completion judge、runtime fallback、checkpoint、trace、eval
 - 安全工具集成
 
 ### 📎 实验指导
@@ -160,6 +168,8 @@
 | 阶段 | 产出物 | 描述 |
 |------|--------|------|
 | 一 | `chat_cli.py` | 命令行对话程序 |
+| 二 | `public_security_rag/` | 公开安全知识 RAG 练习 |
+| 二 | `workflowprogram_rag_context/` | WorkflowProgram 体系知识 RAG 上下文包 |
 | 二 | `security_qa_model/` | 安全问答微调模型 |
 | 三 | `security_agent/` | 自动化安全测试 Agent |
 | 三 | `dify_security_workflow` | Dify 安全分析工作流 |
